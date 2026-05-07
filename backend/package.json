@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest",
-    "test:e2e": "jest --config jest.e2e.config.js"
+    "test:e2e": "jest --config jest.e2e.config.js",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -17,8 +19,6 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1"
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --write src"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
