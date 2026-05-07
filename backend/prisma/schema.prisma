@@ -1,13 +1,15 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-enum Role {
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
   EMPLOYEE
   TEAM_LEAD
   ADMIN
@@ -18,7 +20,7 @@ enum UserStatus {
   INACTIVE
 }
 
-enum ProjectStatus {
+enum EntityStatus {
   ACTIVE
   INACTIVE
 }
@@ -28,15 +30,15 @@ enum TaskStatus {
   CLOSED
 }
 
+enum DailyReportStatus {
+  DRAFT
+  SUBMITTED
+}
+
 enum WorkLocation {
   OFFICE
   CLIENT
   HOME
-}
-
-enum ReportStatus {
-  DRAFT
-  SUBMITTED
 }
 
 enum AbsenceType {
@@ -48,8 +50,18 @@ enum AbsenceType {
 
 enum AbsenceStatus {
   SUBMITTED
-  APPROVED
-  REJECTED
+  DOCUMENT_PENDING
+}
+
+enum AuditEntityType {
+  DAILY_REPORT
+  TIME_ENTRY
+  ABSENCE_REPORT
+}
+
+enum AuditAction {
+  UPDATE
+  DELETE
 }
 
 enum DayType {
@@ -59,149 +71,146 @@ enum DayType {
   SPECIAL
 }
 
-enum AuditAction {
-  UPDATE
-  DELETE
-}
-
-enum AuditEntity {
-  TIME_REPORT
-  ABSENCE_REPORT
-}
+// ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
+  id           String     @id @default(uuid())
   fullName     String
-  email        String    @unique
+  email        String     @unique
   passwordHash String
-  role         Role      @default(EMPLOYEE)
+  role         UserRole
   status       UserStatus @default(ACTIVE)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   deletedAt    DateTime?
 
-  timeReports      TimeReport[]
+  dailyReports     DailyReport[]
   absenceReports   AbsenceReport[]
-  taskAssignments  TaskAssignment[]
-  auditLogsPerformed AuditLog[] @relation("PerformedBy")
-  auditLogsTarget    AuditLog[] @relation("TargetUser")
-  monthLocksBy     MonthLock[] @relation("LockedBy")
-  monthReopensBy   MonthLock[] @relation("ReopenedBy")
-  absenceDocsUploadedBy AbsenceDocument[]
-  assignedByUser   TaskAssignment[] @relation("AssignedBy")
-
-  @@index([email])
-  @@index([status])
+  taskAssignments  TaskAssignment[]  @relation("AssignedUser")
+  assignedByMe     TaskAssignment[]  @relation("AssignedBy")
+  lockedMonths     MonthLock[]       @relation("LockedBy")
+  reopenedMonths   MonthLock[]       @relation("ReopenedBy")
+  auditPerformed   AuditLog[]        @relation("PerformedBy")
+  auditTargeted    AuditLog[]        @relation("TargetUser")
+  absenceDocuments AbsenceDocument[]
 }
 
 model Client {
-  id             String        @id @default(cuid())
-  name           String
-  contactDetails String?
-  status         ProjectStatus @default(ACTIVE)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deletedAt      DateTime?
+  id        String       @id @default(uuid())
+  name      String
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
 
   projects    Project[]
-  timeReports TimeReport[]
+  timeEntries TimeReportEntry[]
 }
 
 model Project {
-  id        String        @id @default(cuid())
+  id        String       @id @default(uuid())
   clientId  String
   name      String
-  status    ProjectStatus @default(ACTIVE)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   deletedAt DateTime?
 
-  client      Client       @relation(fields: [clientId], references: [id])
+  client      Client            @relation(fields: [clientId], references: [id])
   tasks       Task[]
-  timeReports TimeReport[]
-
-  @@index([clientId])
+  timeEntries TimeReportEntry[]
 }
 
 model Task {
-  id        String     @id @default(cuid())
+  id        String     @id @default(uuid())
   projectId String
   name      String
   status    TaskStatus @default(OPEN)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   closedAt  DateTime?
-  deletedAt DateTime?
 
-  project     Project          @relation(fields: [projectId], references: [id])
+  project     Project           @relation(fields: [projectId], references: [id])
   assignments TaskAssignment[]
-  timeReports TimeReport[]
-
-  @@index([projectId])
+  timeEntries TimeReportEntry[]
 }
 
 model TaskAssignment {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   taskId     String
   userId     String
   assignedBy String
   createdAt  DateTime @default(now())
 
   task           Task @relation(fields: [taskId], references: [id])
-  user           User @relation(fields: [userId], references: [id])
+  user           User @relation("AssignedUser", fields: [userId], references: [id])
   assignedByUser User @relation("AssignedBy", fields: [assignedBy], references: [id])
 
   @@unique([taskId, userId])
-  @@index([userId])
 }
 
-model TimeReport {
-  id              String       @id @default(cuid())
-  userId          String
-  reportDate      DateTime     @db.Date
+model DailyReport {
+  id         String            @id @default(uuid())
+  userId     String
+  reportDate DateTime          @db.Date
+  startTime  DateTime          @db.Time(0)
+  endTime    DateTime          @db.Time(0)
+  status     DailyReportStatus @default(DRAFT)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
+
+  user    User              @relation(fields: [userId], references: [id])
+  entries TimeReportEntry[]
+
+  // Partial unique (userId, reportDate) WHERE deletedAt IS NULL is added
+  // as raw SQL in the migration — Prisma DSL cannot express the WHERE clause.
+  @@index([userId, reportDate])
+}
+
+model TimeReportEntry {
+  id              String       @id @default(uuid())
+  dailyReportId   String
   workLocation    WorkLocation
-  startTime       DateTime     @db.Time
-  endTime         DateTime     @db.Time
-  durationMinutes Int
   clientId        String
   projectId       String
   taskId          String
-  description     String?
-  status          ReportStatus @default(DRAFT)
+  startTime       DateTime     @db.Time(0)
+  endTime         DateTime     @db.Time(0)
+  durationMinutes Int
+  description     String?      @db.VarChar(500)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   deletedAt       DateTime?
 
-  user    User    @relation(fields: [userId], references: [id])
-  client  Client  @relation(fields: [clientId], references: [id])
-  project Project @relation(fields: [projectId], references: [id])
-  task    Task    @relation(fields: [taskId], references: [id])
+  dailyReport DailyReport @relation(fields: [dailyReportId], references: [id])
+  client      Client      @relation(fields: [clientId], references: [id])
+  project     Project     @relation(fields: [projectId], references: [id])
+  task        Task        @relation(fields: [taskId], references: [id])
 
-  @@index([userId, reportDate])
+  @@index([dailyReportId])
+  @@index([taskId])
 }
 
 model AbsenceReport {
-  id                     String        @id @default(cuid())
-  userId                 String
-  absenceType            AbsenceType
-  startDate              DateTime      @db.Date
-  endDate                DateTime      @db.Date
-  isPartial              Boolean       @default(false)
-  partialDurationHours   Float?
-  calculatedAbsenceDays  Float
-  status                 AbsenceStatus @default(SUBMITTED)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
-  deletedAt              DateTime?
+  id                    String        @id @default(uuid())
+  userId                String
+  absenceType           AbsenceType
+  startDate             DateTime      @db.Date
+  endDate               DateTime      @db.Date
+  isPartial             Boolean       @default(false)
+  partialDurationHours  Decimal?      @db.Decimal(5, 2)
+  calculatedAbsenceDays Int
+  status                AbsenceStatus @default(SUBMITTED)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   user      User              @relation(fields: [userId], references: [id])
   documents AbsenceDocument[]
-
-  @@index([userId])
 }
 
 model AbsenceDocument {
-  id              String   @id @default(cuid())
+  id              String   @id @default(uuid())
   absenceReportId String
   fileName        String
   storagePath     String
@@ -214,43 +223,41 @@ model AbsenceDocument {
 }
 
 model MonthLock {
-  id          String    @id @default(cuid())
-  year        Int
-  month       Int
-  isLocked    Boolean   @default(false)
-  lockedBy    String?
-  lockedAt    DateTime?
-  reopenedBy  String?
-  reopenedAt  DateTime?
+  id         String    @id @default(uuid())
+  year       Int
+  month      Int
+  isLocked   Boolean   @default(false)
+  lockedBy   String?
+  lockedAt   DateTime?
+  reopenedBy String?
+  reopenedAt DateTime?
 
-  locker   User? @relation("LockedBy", fields: [lockedBy], references: [id])
-  reopener User? @relation("ReopenedBy", fields: [reopenedBy], references: [id])
+  lockedByUser   User? @relation("LockedBy", fields: [lockedBy], references: [id])
+  reopenedByUser User? @relation("ReopenedBy", fields: [reopenedBy], references: [id])
 
   @@unique([year, month])
 }
 
 model AuditLog {
-  id           String      @id @default(cuid())
-  entityType   AuditEntity
+  id           String          @id @default(uuid())
+  entityType   AuditEntityType
   entityId     String
   action       AuditAction
   performedBy  String
   targetUserId String
   oldValue     Json
   newValue     Json
-  createdAt    DateTime    @default(now())
+  createdAt    DateTime        @default(now())
 
   performer  User @relation("PerformedBy", fields: [performedBy], references: [id])
   targetUser User @relation("TargetUser", fields: [targetUserId], references: [id])
-
-  @@index([targetUserId])
 }
 
 model WorkCalendarDay {
-  id            String  @id @default(cuid())
+  id            String   @id @default(uuid())
   date          DateTime @unique @db.Date
   dayType       DayType
   isWorkingDay  Boolean
-  standardHours Float   @default(9)
+  standardHours Decimal  @default(9.0) @db.Decimal(4, 2)
   description   String?
 }
