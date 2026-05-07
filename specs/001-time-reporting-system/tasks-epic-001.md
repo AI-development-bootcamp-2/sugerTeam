@@ -21,7 +21,7 @@
 - [X] T001 Initialize monorepo root: create .gitignore (node_modules, dist, .env, uploads/), .env.example (DATABASE_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, JWT_ACCESS_EXPIRES_IN=2h, JWT_REFRESH_EXPIRES_IN=30d, UPLOAD_DIR=./uploads/absence-docs, PORT=3000, VITE_API_URL=http://localhost:3000), and pnpm-workspace.yaml listing packages: [backend, frontend]: .gitignore, .env.example, pnpm-workspace.yaml
 - [ ] T002 [P] Scaffold backend as Node.js 20 + TypeScript project: create backend/package.json with name, scripts (dev: ts-node-dev src/server.ts, build: tsc, start: node dist/server.js), install typescript@5, ts-node-dev, @types/node; create backend/tsconfig.json (target ES2022, module CommonJS, strict true, outDir dist, rootDir src, paths alias @/ → src/): backend/package.json, backend/tsconfig.json
 - [ ] T003 [P] Scaffold frontend as React 18 + Vite + TypeScript project using `pnpm create vite@latest frontend -- --template react-ts`; verify frontend/package.json, frontend/vite.config.ts, frontend/tsconfig.json exist: frontend/package.json, frontend/tsconfig.json, frontend/vite.config.ts
-- [ ] T004 Configure backend ESLint (@typescript-eslint/eslint-plugin, eslint-config-prettier) and Prettier (.prettierrc: singleQuote true, semi true, printWidth 100); add lint and format scripts to package.json: backend/.eslintrc.json, backend/.prettierrc, backend/package.json
+- [X] T004 Configure backend ESLint (@typescript-eslint/eslint-plugin, eslint-config-prettier) and Prettier; .eslintrc.json: parser `@typescript-eslint/parser`, extends `["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"]`; .prettierrc: singleQuote true, semi true, printWidth 100, trailingComma "es5", tabWidth 2; add `"lint": "eslint src --ext .ts"` and `"format": "prettier --write src"` scripts to package.json (no eslint-plugin-prettier): backend/.eslintrc.json, backend/.prettierrc, backend/package.json
 - [ ] T005 [P] Configure frontend ESLint and Prettier (same .prettierrc); install and init Tailwind CSS 3 (tailwindcss, postcss, autoprefixer); configure content paths in tailwind.config.ts; add @tailwind base/components/utilities directives; configure vite.config.ts to alias @ → src: frontend/.eslintrc.json, frontend/.prettierrc, frontend/tailwind.config.ts, frontend/postcss.config.js, frontend/src/index.css, frontend/vite.config.ts
 - [ ] T006 Create Docker Compose with three named services: backend (build: ./backend, port 3000:3000, depends_on db), frontend (build: ./frontend, port 5173:5173, depends_on backend), db (image: postgres:15-alpine, port 5432:5432, env POSTGRES_DB/USER/PASSWORD, named volume pgdata); add env_file: .env to backend service: docker-compose.yml
 
@@ -61,6 +61,17 @@
 - [ ] T020 [US6] Implement Hebrew RTL login page: React Hook Form with Zod schema (email: required string().email(), password: required string()); on submit calls POST /auth/login via API client, stores result in auth store (setAuth), navigates to /dashboard; shows Hebrew inline validation errors ("כתובת דוא״ל נדרשת", "סיסמה נדרשת", "דוא״ל לא תקין"); shows Hebrew auth error on 401 ("פרטי התחברות שגויים"); layout uses Tailwind logical properties (ps-, pe-) for RTL, mobile-first (full-height screen, centered card): frontend/src/pages/login/LoginPage.tsx
 
 **Checkpoint**: Open /login → Hebrew RTL form centered on screen; valid admin credentials → redirects to /dashboard; wrong password → Hebrew error inline; page reload on /dashboard → token refreshed silently via cookie; layout correct on mobile Chrome (no horizontal scroll)
+
+---
+
+## Clarifications
+
+### Session 2026-05-07
+
+- Q: What should `.eslintrc.json` extend from? → A: `["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"]`
+- Q: What `trailingComma` value for `.prettierrc`? → A: `"es5"`
+- Q: Should `eslint-plugin-prettier` be installed? → A: No — separate lint and format scripts only
+- Q: What `tabWidth` for `.prettierrc`? → A: `2`
 
 ---
 
