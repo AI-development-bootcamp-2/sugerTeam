@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  TEAM_LEAD
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TaskStatus {
+  OPEN
+  CLOSED
+}
+
+enum WorkLocation {
+  OFFICE
+  CLIENT
+  HOME
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum AbsenceType {
+  VACATION
+  SICK_LEAVE
+  MILITARY_RESERVE
+  OTHER
+}
+
+enum AbsenceStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum DayType {
+  REGULAR
+  WEEKEND
+  HOLIDAY
+  SPECIAL
+}
+
+enum AuditAction {
+  UPDATE
+  DELETE
+}
+
+enum AuditEntity {
+  TIME_REPORT
+  ABSENCE_REPORT
+}
+
+model User {
+  id           String    @id @default(cuid())
+  fullName     String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(EMPLOYEE)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  timeReports      TimeReport[]
+  absenceReports   AbsenceReport[]
+  taskAssignments  TaskAssignment[]
+  auditLogsPerformed AuditLog[] @relation("PerformedBy")
+  auditLogsTarget    AuditLog[] @relation("TargetUser")
+  monthLocksBy     MonthLock[] @relation("LockedBy")
+  monthReopensBy   MonthLock[] @relation("ReopenedBy")
+  absenceDocsUploadedBy AbsenceDocument[]
+  assignedByUser   TaskAssignment[] @relation("AssignedBy")
+
+  @@index([email])
+  @@index([status])
+}
+
+model Client {
+  id             String        @id @default(cuid())
+  name           String
+  contactDetails String?
+  status         ProjectStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  projects    Project[]
+  timeReports TimeReport[]
+}
+
+model Project {
+  id        String        @id @default(cuid())
+  clientId  String
+  name      String
+  status    ProjectStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  deletedAt DateTime?
+
+  client      Client       @relation(fields: [clientId], references: [id])
+  tasks       Task[]
+  timeReports TimeReport[]
+
+  @@index([clientId])
+}
+
+model Task {
+  id        String     @id @default(cuid())
+  projectId String
+  name      String
+  status    TaskStatus @default(OPEN)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  closedAt  DateTime?
+  deletedAt DateTime?
+
+  project     Project          @relation(fields: [projectId], references: [id])
+  assignments TaskAssignment[]
+  timeReports TimeReport[]
+
+  @@index([projectId])
+}
+
+model TaskAssignment {
+  id         String   @id @default(cuid())
+  taskId     String
+  userId     String
+  assignedBy String
+  createdAt  DateTime @default(now())
+
+  task           Task @relation(fields: [taskId], references: [id])
+  user           User @relation(fields: [userId], references: [id])
+  assignedByUser User @relation("AssignedBy", fields: [assignedBy], references: [id])
+
+  @@unique([taskId, userId])
+  @@index([userId])
+}
+
+model TimeReport {
+  id              String       @id @default(cuid())
+  userId          String
+  reportDate      DateTime     @db.Date
+  workLocation    WorkLocation
+  startTime       DateTime     @db.Time
+  endTime         DateTime     @db.Time
+  durationMinutes Int
+  clientId        String
+  projectId       String
+  taskId          String
+  description     String?
+  status          ReportStatus @default(DRAFT)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  user    User    @relation(fields: [userId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  task    Task    @relation(fields: [taskId], references: [id])
+
+  @@index([userId, reportDate])
+}
+
+model AbsenceReport {
+  id                     String        @id @default(cuid())
+  userId                 String
+  absenceType            AbsenceType
+  startDate              DateTime      @db.Date
+  endDate                DateTime      @db.Date
+  isPartial              Boolean       @default(false)
+  partialDurationHours   Float?
+  calculatedAbsenceDays  Float
+  status                 AbsenceStatus @default(SUBMITTED)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  deletedAt              DateTime?
+
+  user      User              @relation(fields: [userId], references: [id])
+  documents AbsenceDocument[]
+
+  @@index([userId])
+}
+
+model AbsenceDocument {
+  id              String   @id @default(cuid())
+  absenceReportId String
+  fileName        String
+  storagePath     String
+  mimeType        String
+  uploadedBy      String
+  uploadedAt      DateTime @default(now())
+
+  absenceReport AbsenceReport @relation(fields: [absenceReportId], references: [id])
+  uploader      User          @relation(fields: [uploadedBy], references: [id])
+}
+
+model MonthLock {
+  id          String    @id @default(cuid())
+  year        Int
+  month       Int
+  isLocked    Boolean   @default(false)
+  lockedBy    String?
+  lockedAt    DateTime?
+  reopenedBy  String?
+  reopenedAt  DateTime?
+
+  locker   User? @relation("LockedBy", fields: [lockedBy], references: [id])
+  reopener User? @relation("ReopenedBy", fields: [reopenedBy], references: [id])
+
+  @@unique([year, month])
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  entityType   AuditEntity
+  entityId     String
+  action       AuditAction
+  performedBy  String
+  targetUserId String
+  oldValue     Json
+  newValue     Json
+  createdAt    DateTime    @default(now())
+
+  performer  User @relation("PerformedBy", fields: [performedBy], references: [id])
+  targetUser User @relation("TargetUser", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId])
+}
+
+model WorkCalendarDay {
+  id            String  @id @default(cuid())
+  date          DateTime @unique @db.Date
+  dayType       DayType
+  isWorkingDay  Boolean
+  standardHours Float   @default(9)
+  description   String?
+}
