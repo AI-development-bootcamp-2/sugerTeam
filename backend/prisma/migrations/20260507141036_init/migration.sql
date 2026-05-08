@@ -37,7 +37,7 @@ CREATE TABLE "User" (
     "fullName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
-    "role" "UserRole" NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'EMPLOYEE',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -142,6 +142,7 @@ CREATE TABLE "AbsenceReport" (
     "status" "AbsenceStatus" NOT NULL DEFAULT 'SUBMITTED',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "AbsenceReport_pkey" PRIMARY KEY ("id")
 );
@@ -182,7 +183,7 @@ CREATE TABLE "AuditLog" (
     "performedBy" TEXT NOT NULL,
     "targetUserId" TEXT NOT NULL,
     "oldValue" JSONB NOT NULL,
-    "newValue" JSONB NOT NULL,
+    "newValue" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")

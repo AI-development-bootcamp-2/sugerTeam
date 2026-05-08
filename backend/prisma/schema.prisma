@@ -78,7 +78,7 @@ model User {
   fullName     String
   email        String     @unique
   passwordHash String
-  role         UserRole
+  role         UserRole   @default(EMPLOYEE)
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -204,6 +204,7 @@ model AbsenceReport {
   status                AbsenceStatus @default(SUBMITTED)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
+  deletedAt             DateTime?
 
   user      User              @relation(fields: [userId], references: [id])
   documents AbsenceDocument[]
@@ -246,7 +247,7 @@ model AuditLog {
   performedBy  String
   targetUserId String
   oldValue     Json
-  newValue     Json
+  newValue     Json?
   createdAt    DateTime        @default(now())
 
   performer  User @relation("PerformedBy", fields: [performedBy], references: [id])
