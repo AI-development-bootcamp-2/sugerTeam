@@ -10,6 +10,9 @@ build/
 .env*
 !.env.example
 
+# Docker local overrides
+docker-compose.override.yml
+
 # Uploads — local filesystem storage for absence documents
 uploads/
 
