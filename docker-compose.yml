@@ -18,8 +18,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -41,14 +41,14 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./backend/src:/app/src
-      - ./backend/prisma:/app/prisma
-      - backend_uploads:/app/uploads
+      - ./backend/src:/app/backend/src
+      - ./backend/prisma:/app/backend/prisma
+      - backend_uploads:/app/backend/uploads
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: unless-stopped
     depends_on:
       - backend
@@ -57,8 +57,8 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/index.html:/app/index.html
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/index.html:/app/frontend/index.html
 
 volumes:
   pgdata:
