@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
-echo "Pushing Prisma schema to database..."
-pnpm exec prisma db push --skip-generate
+echo "Running database migrations..."
+pnpm exec prisma migrate deploy
+
+echo "Seeding database..."
+pnpm exec prisma db seed
 
 echo "Starting backend server..."
 exec pnpm dev
