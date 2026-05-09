@@ -1,0 +1,2 @@
+# Force LF line endings for shell scripts so Alpine containers can execute them
+*.sh  text  eol=lf
