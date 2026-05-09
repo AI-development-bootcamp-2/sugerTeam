@@ -80,6 +80,7 @@ CREATE TABLE "Task" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "closedAt" TIMESTAMP(3),
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
 );
