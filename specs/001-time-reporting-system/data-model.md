@@ -2,17 +2,18 @@
 
 **Phase**: 1 — Design
 **Date**: 2026-05-06
+**Updated**: 2026-05-07 — split TimeReport into DailyReport (day container) + TimeReportEntry (per-task row)
 
 ---
 
 ## Entity Relationship Overview
 
 ```
-User ──────────────────────────────┐
-  │                                │
-  ├──< TimeReport >── Task ──< TaskAssignment >── User
-  │        │
-  │        └── Client, Project, Task (denormalized for query performance)
+User ──────────────────────────────────────────┐
+  │                                             │
+  ├──< DailyReport ──< TimeReportEntry >── Task ──< TaskAssignment >── User
+  │                           │
+  │                           └── Client, Project (denormalized for query performance)
   │
   ├──< AbsenceReport >──< AbsenceDocument
   │
@@ -23,6 +24,18 @@ MonthLock (standalone, keyed by year+month)
 AuditLog (standalone, polymorphic)
 WorkCalendarDay (standalone, keyed by date)
 ```
+
+---
+
+## Core Reporting Concept
+
+A user reports work at the **day level**. One `DailyReport` exists per user per calendar date. Inside that day report the user adds one or more `TimeReportEntry` rows — each row targets a specific client / project / task and carries its own time range and duration.
+
+- The **day** is the unit of submission (`DailyReport.status`).
+- Each **entry** is a single project/task block within that day.
+- Multiple entries on the same day are always allowed, including overlapping time ranges (a user may have worked on two projects during the same window).
+- The system MUST NOT enforce "no overlapping time ranges" for entries under the same `DailyReport`.
+- Validation that matters: the sum of `durationMinutes` across all entries for a day is compared against `WorkCalendarDay.standardHours` (UI feedback only; hard rejection is not required unless specified).
 
 ---
 
@@ -58,7 +71,6 @@ An organization or company for which employees report work.
 |-------|------|-------------|-------|
 | id | UUID | PK | |
 | name | String | NOT NULL | Display name |
-| contactDetails | String | nullable | Optional contact info |
 | status | Enum | NOT NULL, default ACTIVE | Values: `ACTIVE`, `INACTIVE` |
 | createdAt | DateTime | NOT NULL | |
 | updatedAt | DateTime | NOT NULL | |
@@ -122,36 +134,61 @@ The link between a user and a task, granting reporting rights.
 
 ---
 
-### TimeReport
+### DailyReport
 
-A work-hour entry for a specific day and time range.
+The day-level container for a user's work on a single calendar date. One row per user per date.
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | UUID | PK | |
 | userId | UUID | FK → User, NOT NULL | Report owner |
 | reportDate | Date | NOT NULL | The calendar date of work |
+| startTime | Time | NOT NULL | HH:MM — start of the work day |
+| endTime | Time | NOT NULL | HH:MM — end of the work day; must be > startTime |
+| status | Enum | NOT NULL, default DRAFT | Values: `DRAFT`, `SUBMITTED` |
+| createdAt | DateTime | NOT NULL | |
+| updatedAt | DateTime | NOT NULL | |
+| deletedAt | DateTime | nullable | Soft delete |
+
+**Constraints**: UNIQUE on `(userId, reportDate)` WHERE `deletedAt IS NULL`.
+**State transitions**: `DRAFT` → `SUBMITTED` (employee submits the day). `SUBMITTED` → `DRAFT` (employee reopens before month lock). `SUBMITTED` → soft-deleted (cancel).
+**Rules**:
+- `endTime > startTime` (server-enforced); no midnight crossing.
+- All `TimeReportEntry` times must fall within `[startTime, endTime]`.
+- A `DailyReport` cannot be created or modified if its `reportDate` month is locked (unless editor is Admin).
+- A day report can only be submitted once all its entries pass entry-level validation.
+
+---
+
+### TimeReportEntry
+
+A single project/task work block within a `DailyReport`. A day report may contain any number of entries.
+
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| id | UUID | PK | |
+| dailyReportId | UUID | FK → DailyReport, NOT NULL | Parent day container |
 | workLocation | Enum | NOT NULL | Values: `OFFICE`, `CLIENT`, `HOME` |
-| startTime | Time | NOT NULL | HH:MM (no seconds needed) |
-| endTime | Time | NOT NULL | Must be > startTime; no midnight crossing |
-| durationMinutes | Integer | NOT NULL | Calculated: (endTime - startTime) in minutes |
 | clientId | UUID | FK → Client, NOT NULL | Denormalized for query performance |
 | projectId | UUID | FK → Project, NOT NULL | Denormalized |
 | taskId | UUID | FK → Task, NOT NULL | The assigned task reported against |
-| description | String | NOT NULL, max 500 chars | Work description |
-| status | Enum | NOT NULL, default SUBMITTED | Values: `DRAFT`, `SUBMITTED` |
+| startTime | Time | NOT NULL | HH:MM (no seconds needed) |
+| endTime | Time | NOT NULL | Must be > startTime; no midnight crossing |
+| durationMinutes | Integer | NOT NULL | Calculated: (endTime − startTime) in minutes |
+| description | String | nullable, max 500 chars | Optional work description |
 | createdAt | DateTime | NOT NULL | |
 | updatedAt | DateTime | NOT NULL | |
 | deletedAt | DateTime | nullable | Soft delete |
 
 **Validation rules**:
-- `endTime > startTime` (server-enforced)
-- `startTime` and `endTime` on the same calendar day (no midnight crossing)
-- No overlap with another `TimeReport` for the same `(userId, reportDate)` that is not `DRAFT`
-- `task` must be actively assigned to `userId` at save time
-- `reportDate` month must not be locked (unless editor is Admin)
+- `endTime > startTime` (server-enforced).
+- `startTime` and `endTime` on the same calendar day (no midnight crossing).
+- `startTime >= DailyReport.startTime` and `endTime <= DailyReport.endTime` — entry must be contained within the parent day's time window (server-enforced).
+- Overlapping time ranges with other entries in the same `DailyReport` are **explicitly allowed**.
+- `task` must be actively assigned to the `DailyReport.userId` at save time.
+- Month lock is checked via the parent `DailyReport.reportDate`.
 
-**State transitions**: `DRAFT` → `SUBMITTED` (on save). `SUBMITTED` → (soft-deleted on cancel).
+**Daily total rule**: `SUM(durationMinutes)` across all non-deleted entries for a `DailyReport` is compared against `WorkCalendarDay.standardHours × 60`. This comparison drives UI feedback (e.g., a progress bar) and does not hard-block submission.
 
 ---
 
@@ -174,9 +211,9 @@ An absence record covering one or more consecutive calendar days.
 | updatedAt | DateTime | NOT NULL | |
 
 **Document rules**:
-- `SICK_LEAVE` and `MILITARY_RESERVE` set status → `DOCUMENT_PENDING` until document uploaded
-- Document upload moves status → `SUBMITTED`
-- Document can be uploaded after `startDate` month is locked (documents arrive late)
+- `SICK_LEAVE` and `MILITARY_RESERVE` set status → `DOCUMENT_PENDING` until document uploaded.
+- Document upload moves status → `SUBMITTED`.
+- Document can be uploaded after `startDate` month is locked (documents arrive late).
 
 ---
 
@@ -213,18 +250,18 @@ Records the lock state of a specific year-month.
 
 **Constraints**: UNIQUE on `(year, month)`. Row is upserted when admin locks/unlocks.
 **Query pattern**: Check `SELECT isLocked FROM MonthLock WHERE year=? AND month=?` on every
-write to `TimeReport` / `AbsenceReport`. If no row exists, month is implicitly unlocked.
+write to `DailyReport` / `AbsenceReport`. If no row exists, month is implicitly unlocked.
 
 ---
 
 ### AuditLog
 
-An immutable log of every admin edit to a TimeReport or AbsenceReport.
+An immutable log of every admin edit to a DailyReport, TimeReportEntry, or AbsenceReport.
 
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | UUID | PK | |
-| entityType | Enum | NOT NULL | Values: `TIME_REPORT`, `ABSENCE_REPORT` |
+| entityType | Enum | NOT NULL | Values: `DAILY_REPORT`, `TIME_ENTRY`, `ABSENCE_REPORT` |
 | entityId | UUID | NOT NULL | ID of the edited record |
 | action | Enum | NOT NULL | Values: `UPDATE`, `DELETE` |
 | performedBy | UUID | FK → User, NOT NULL | Admin who made the change |
@@ -257,14 +294,15 @@ Defines the working standard for each calendar date (holidays, shortened days, e
 
 ## Indexes
 
-Key indexes for query performance:
-
 ```sql
--- Most common query: all reports for a user in a month
-CREATE INDEX idx_time_report_user_month ON TimeReport (userId, reportDate);
+-- All day reports for a user in a month (most common query)
+CREATE INDEX idx_daily_report_user_month ON DailyReport (userId, reportDate);
 
--- Overlap detection query
-CREATE INDEX idx_time_report_user_date ON TimeReport (userId, reportDate) WHERE deletedAt IS NULL;
+-- All entries for a given day report
+CREATE INDEX idx_time_entry_daily_report ON TimeReportEntry (dailyReportId) WHERE deletedAt IS NULL;
+
+-- Cross-user query: all entries for a task (admin views)
+CREATE INDEX idx_time_entry_task ON TimeReportEntry (taskId);
 
 -- Assigned tasks lookup for dropdown population
 CREATE INDEX idx_task_assignment_user ON TaskAssignment (userId, taskId);
@@ -272,3 +310,6 @@ CREATE INDEX idx_task_assignment_user ON TaskAssignment (userId, taskId);
 -- Month lock lookup
 CREATE UNIQUE INDEX idx_month_lock_year_month ON MonthLock (year, month);
 ```
+
+> The former "overlap detection" index on `(userId, reportDate)` for `TimeReport` is intentionally
+> omitted — overlapping entries within a day are a supported product behavior.
