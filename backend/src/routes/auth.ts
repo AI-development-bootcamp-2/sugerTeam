@@ -1,13 +1,9 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import * as AuthService from '../services/auth.service';
+import { AuthService } from '../services/auth.service';
 
 const router = Router();
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
+const authService = new AuthService();
 
 const REFRESH_COOKIE = 'refreshToken';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -18,49 +14,68 @@ const cookieOptions = {
   maxAge: THIRTY_DAYS_MS,
 };
 
-router.post('/login', async (req, res, next) => {
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: result.error.format() });
+    res.status(400).json({ error: result.error.format() });
+    return;
   }
 
   try {
-    const { accessToken, refreshToken, user } = await AuthService.login(
+    const { accessToken, refreshToken, user } = await authService.login(
       result.data.email,
-      result.data.password
+      result.data.password,
+      req.headers['user-agent'],
+      req.ip,
     );
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
-    return res.status(200).json({ accessToken, user });
-  } catch (err) {
-    if (err instanceof AuthService.AuthError && err.status === 401) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    res.status(200).json({ accessToken, user });
+  } catch (err: unknown) {
+    const authErr = err as { code?: string; message?: string };
+    if (authErr.code === 'PASSWORD_EXPIRED') {
+      res.status(401).json({ code: 'PASSWORD_EXPIRED', message: authErr.message });
+    } else if (authErr.code === 'INVALID_CREDENTIALS') {
+      res.status(401).json({ error: 'Invalid credentials' });
+    } else {
+      next(err);
     }
-    return next(err);
   }
 });
 
-router.post('/refresh', async (req, res, next) => {
-  const token = req.cookies[REFRESH_COOKIE] as string | undefined;
+router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+  const token: string | undefined = req.cookies[REFRESH_COOKIE];
   if (!token) {
-    return res.status(401).json({ error: 'No refresh token' });
+    res.status(401).json({ error: 'No refresh token' });
+    return;
   }
 
   try {
-    const { accessToken, refreshToken, user } = await AuthService.refreshTokens(token);
+    const { accessToken, refreshToken, user } = await authService.refreshTokens(token);
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
-    return res.status(200).json({ accessToken, user });
-  } catch (err) {
-    if (err instanceof AuthService.AuthError) {
-      return res.status(err.status).json({ error: 'Invalid refresh token' });
+    res.status(200).json({ accessToken, user });
+  } catch (err: unknown) {
+    const authErr = err as { code?: string };
+    if (authErr.code === 'INVALID_TOKEN') {
+      res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
+      res.status(401).json({ error: 'Invalid or expired refresh token' });
+    } else {
+      next(err);
     }
-    return next(err);
   }
 });
 
-router.post('/logout', (_req, res) => {
-  AuthService.logout();
-  res.clearCookie(REFRESH_COOKIE, cookieOptions);
-  return res.status(204).send();
+router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
+  const token: string | undefined = req.cookies[REFRESH_COOKIE];
+  if (token) {
+    await authService.logout(token).catch(next);
+  }
+  res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
+  res.status(204).send();
 });
 
 export default router;
