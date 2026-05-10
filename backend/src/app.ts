@@ -20,6 +20,7 @@ app.use((_req: Request, res: Response) => {
 });
 
 // Four-argument signature is required for Express to treat this as an error handler.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
