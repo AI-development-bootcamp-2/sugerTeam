@@ -68,6 +68,9 @@
 
 ### Session 2026-05-10
 
+- Q: Where should the `User` TypeScript type be defined for T017? → A: Shared `frontend/src/types/auth.ts` file — exports `UserRole` enum (mirroring Prisma) and `User` interface `{ id: string; fullName: string; role: UserRole }`; created as part of T017 so T018–T020 import from there without coupling to the store module
+- Q: Should the Zustand auth store expose an `isAuthenticated` derived boolean selector? → A: No — consumers check `accessToken !== null` directly; store stays minimal (pure state + two actions only)
+- Q: Should T017's store include bootstrap/initialization logic (e.g., auto-trigger silent refresh on page reload)? → A: No — store is pure data + actions only; T019's ProtectedRoute owns the "refresh in-flight" loading state on first mount; T018's 401 interceptor calls `setAuth()` after a successful refresh; keeping init logic out of the store avoids a circular dependency (T018 reads the store's token; if the store called T018, they'd be mutually dependent)
 - Q: Where should the TypeScript `req.user` type augmentation be defined for T014? → A: Separate `backend/src/types/express.d.ts` global declaration file — available to all middleware files automatically without circular imports
 - Q: For T015, how should year+month be extracted from `req.params`? → A: Single `:yearMonth` param in `"yyyy-mm"` format; fall back to parsing `req.body.date` ISO string when no param is present
 - Q: For T014, what should the 401 and 403 error response bodies look like? → A: Hebrew `{ error: "..." }` shape — `{ error: "טוקן חסר או לא תקין" }` for 401, `{ error: "אין לך הרשאה לבצע פעולה זו" }` for 403 — consistent with T015 and FR-039
