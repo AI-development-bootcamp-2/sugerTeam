@@ -266,7 +266,7 @@ can now edit the same report.
 
 **Authentication & Access**
 
-- **FR-001**: The system MUST authenticate users via email and password.
+- **FR-001**: The system MUST authenticate users via email and password. Email matching MUST be case-insensitive (normalized to lowercase).
 - **FR-002**: User accounts MUST be created exclusively by an admin; self-registration is not permitted.
 - **FR-003**: The system MUST enforce role-based access at every data boundary; client-side checks are supplementary only.
 - **FR-004**: Inactive users MUST NOT be able to log in.
@@ -377,3 +377,13 @@ can now edit the same report.
 - Team leads cannot edit other employees' reports; this is an admin-only capability in v1.
 - There is no approval workflow for reports; reports are submitted directly without a manager review step.
 - The exact closure date of a reporting month is not automatically enforced; admins manually lock months at their discretion.
+- Production deployments MUST run behind HTTPS; the refresh token cookie requires the `secure` flag and must not travel over plain HTTP.
+
+---
+
+## Clarifications
+
+### Session 2026-05-10
+
+- Q: Should user email matching be case-insensitive? → A: Yes — normalize email to lowercase on every login lookup (RFC-compliant; prevents "account not found" errors from casing mismatches).
+- Q: Is HTTPS required in production? → A: Yes — production deployments must run behind HTTPS; the refresh token cookie carries the `secure` flag and must not be transmitted over plain HTTP.
