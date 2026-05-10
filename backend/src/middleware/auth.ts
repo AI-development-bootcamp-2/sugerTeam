@@ -1,36 +1,48 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { UserRole } from '@prisma/client';
 
 export interface AuthPayload {
   userId: string;
-  role: string;
+  role: UserRole;
 }
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      user?: AuthPayload;
-    }
-  }
+interface TokenPayload {
+  sub: string;
+  role: UserRole;
 }
+
+const VALID_ROLES = new Set<string>(Object.values(UserRole));
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    res.status(401).json({ message: 'Missing token' });
+  const secret = process.env.JWT_ACCESS_SECRET;
+  if (!secret) {
+    res.status(500).json({ error: 'שגיאת שרת פנימית' });
     return;
   }
 
-  const token = header.slice(7);
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token) {
+    res.status(401).json({ error: 'טוקן חסר או לא תקין' });
+    return;
+  }
+
   try {
-    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as {
-      sub: string;
-      role: string;
-    };
+    const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as TokenPayload;
+    if (
+      typeof payload.sub !== 'string' ||
+      payload.sub.length === 0 ||
+      !VALID_ROLES.has(payload.role)
+    ) {
+      res.status(401).json({ error: 'טוקן חסר או לא תקין' });
+      return;
+    }
     req.user = { userId: payload.sub, role: payload.role };
     next();
-  } catch {
-    res.status(401).json({ message: 'Invalid or expired token' });
+  } catch (err) {
+    console.error('[authenticateToken] JWT verification failed:', err);
+    res.status(401).json({ error: 'טוקן חסר או לא תקין' });
   }
 }

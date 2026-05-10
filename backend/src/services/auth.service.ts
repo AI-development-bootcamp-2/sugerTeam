@@ -3,8 +3,15 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../lib/prisma';
 
+if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+  throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be set');
+}
+
 const PASSWORD_MAX_AGE_DAYS = 30;
 const REFRESH_LIFETIME_DAYS = 30;
+
+// Pre-computed to prevent timing-based email enumeration when the user doesn't exist
+const DUMMY_HASH = bcrypt.hashSync('__timing_guard__', 12);
 
 class AuthError extends Error {
   constructor(
@@ -24,12 +31,14 @@ function refreshExpiresAt(): Date {
 
 function signAccess(userId: string, role: string): string {
   return jwt.sign({ sub: userId, role }, process.env.JWT_ACCESS_SECRET!, {
+    algorithm: 'HS256',
     expiresIn: (process.env.JWT_ACCESS_EXPIRES_IN ?? '2h') as string,
   } as jwt.SignOptions);
 }
 
 function signRefresh(userId: string, jti: string): string {
   return jwt.sign({ sub: userId, jti }, process.env.JWT_REFRESH_SECRET!, {
+    algorithm: 'HS256',
     expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '30d') as string,
   } as jwt.SignOptions);
 }
@@ -47,18 +56,17 @@ export class AuthService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<TokenResult> {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
 
-    if (!user || user.status === 'INACTIVE') {
+    // Always run bcrypt to prevent timing-based email enumeration
+    const hash = user?.passwordHash ?? DUMMY_HASH;
+    const valid = await bcrypt.compare(password, hash);
+
+    if (!user || user.status === 'INACTIVE' || !valid) {
       throw new AuthError('INVALID_CREDENTIALS', 'Invalid credentials');
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      throw new AuthError('INVALID_CREDENTIALS', 'Invalid credentials');
-    }
-
-    // null = seeded admin account, exempt from rotation
+    // null = seeded admin account, exempt from 30-day rotation
     if (user.passwordChangedAt !== null) {
       const ageDays =
         (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -87,10 +95,9 @@ export class AuthService {
   async refreshTokens(refreshToken: string): Promise<TokenResult> {
     let payload: { sub: string; jti: string };
     try {
-      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as {
-        sub: string;
-        jti: string;
-      };
+      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!, {
+        algorithms: ['HS256'],
+      }) as { sub: string; jti: string };
     } catch {
       throw new AuthError('INVALID_TOKEN', 'Invalid refresh token');
     }
@@ -132,7 +139,9 @@ export class AuthService {
   async logout(refreshToken: string): Promise<void> {
     let payload: { jti: string };
     try {
-      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { jti: string };
+      payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!, {
+        algorithms: ['HS256'],
+      }) as { jti: string };
     } catch {
       // expired or invalid token — treat as already logged out
       return;
