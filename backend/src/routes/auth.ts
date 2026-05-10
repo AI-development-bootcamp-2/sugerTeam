@@ -1,9 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { AuthService } from '../services/auth.service';
+import { login, refreshTokens, logout, AuthError } from '../services/auth.service';
 
 const router = Router();
-const authService = new AuthService();
 
 const REFRESH_COOKIE = 'refreshToken';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -27,7 +26,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
   }
 
   try {
-    const { accessToken, refreshToken, user } = await authService.login(
+    const { accessToken, refreshToken, user } = await login(
       result.data.email,
       result.data.password,
       req.headers['user-agent'],
@@ -36,11 +35,8 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
     res.status(200).json({ accessToken, user });
   } catch (err: unknown) {
-    const authErr = err as { code?: string; message?: string };
-    if (authErr.code === 'PASSWORD_EXPIRED') {
-      res.status(401).json({ code: 'PASSWORD_EXPIRED', message: authErr.message });
-    } else if (authErr.code === 'INVALID_CREDENTIALS') {
-      res.status(401).json({ error: 'Invalid credentials' });
+    if (err instanceof AuthError) {
+      res.status(err.status).json({ error: err.message });
     } else {
       next(err);
     }
@@ -55,14 +51,13 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
   }
 
   try {
-    const { accessToken, refreshToken, user } = await authService.refreshTokens(token);
+    const { accessToken, refreshToken, user } = await refreshTokens(token);
     res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
     res.status(200).json({ accessToken, user });
   } catch (err: unknown) {
-    const authErr = err as { code?: string };
-    if (authErr.code === 'INVALID_TOKEN') {
+    if (err instanceof AuthError) {
       res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
-      res.status(401).json({ error: 'Invalid or expired refresh token' });
+      res.status(err.status).json({ error: err.message });
     } else {
       next(err);
     }
@@ -72,7 +67,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
   const token: string | undefined = req.cookies[REFRESH_COOKIE];
   if (token) {
-    await authService.logout(token).catch(next);
+    await logout(token).catch(next);
   }
   res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
   res.status(204).send();

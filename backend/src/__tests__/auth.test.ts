@@ -138,7 +138,7 @@ describe('POST /api/v1/auth/refresh', () => {
 
 describe('POST /api/v1/auth/logout', () => {
   it('204 and clears the refresh token cookie', async () => {
-    mockLogout.mockReturnValue(undefined);
+    mockLogout.mockResolvedValue(undefined);
 
     const res = await request(app).post('/api/v1/auth/logout');
 
