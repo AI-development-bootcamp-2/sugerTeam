@@ -10,10 +10,12 @@ const loginSchema = z.object({
 });
 
 const REFRESH_COOKIE = 'refreshToken';
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const cookieOptions = {
   httpOnly: true,
   sameSite: 'strict' as const,
   secure: process.env.NODE_ENV === 'production',
+  maxAge: THIRTY_DAYS_MS,
 };
 
 router.post('/login', async (req, res, next) => {
