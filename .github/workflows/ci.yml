@@ -56,15 +56,19 @@ jobs:
 
       - name: Lint (parallel)
         run: |
-          pnpm --filter backend lint & BACKEND=$!
-          pnpm --filter frontend lint & FRONTEND=$!
-          wait $BACKEND && wait $FRONTEND
+          pnpm --filter backend lint & PID1=$!
+          pnpm --filter frontend lint & PID2=$!
+          wait $PID1; R1=$?
+          wait $PID2; R2=$?
+          exit $((R1 | R2))
 
       - name: Type-check (parallel)
         run: |
-          pnpm --filter backend exec tsc --noEmit & BACKEND=$!
-          pnpm --filter frontend exec tsc -p tsconfig.app.json --noEmit & FRONTEND=$!
-          wait $BACKEND && wait $FRONTEND
+          pnpm --filter backend exec tsc --noEmit & PID1=$!
+          pnpm --filter frontend exec tsc -- -p tsconfig.app.json --noEmit & PID2=$!
+          wait $PID1; R1=$?
+          wait $PID2; R2=$?
+          exit $((R1 | R2))
 
       - name: Test backend
         run: |
