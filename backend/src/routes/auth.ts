@@ -13,6 +13,12 @@ const cookieOptions = {
   maxAge: THIRTY_DAYS_MS,
 };
 
+const clearCookieOptions = {
+  httpOnly: true,
+  sameSite: 'strict' as const,
+  secure: process.env.NODE_ENV === 'production',
+};
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -56,7 +62,7 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     res.status(200).json({ accessToken, user });
   } catch (err: unknown) {
     if (err instanceof AuthError) {
-      res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
+      res.clearCookie(REFRESH_COOKIE, clearCookieOptions);
       res.status(err.status).json({ error: err.message });
     } else {
       next(err);
@@ -67,9 +73,14 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 router.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
   const token: string | undefined = req.cookies[REFRESH_COOKIE];
   if (token) {
-    await logout(token).catch(next);
+    try {
+      await logout(token);
+    } catch (err) {
+      next(err);
+      return;
+    }
   }
-  res.clearCookie(REFRESH_COOKIE, { httpOnly: true, sameSite: 'strict' });
+  res.clearCookie(REFRESH_COOKIE, clearCookieOptions);
   res.status(204).send();
 });
 

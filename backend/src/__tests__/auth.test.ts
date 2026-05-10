@@ -146,6 +146,17 @@ describe('POST /api/v1/auth/logout', () => {
     const cookies = (res.headers['set-cookie'] as unknown) as string[] | undefined;
     expect(cookies?.some((c: string) => c.startsWith('refreshToken=;'))).toBe(true);
   });
+
+  it('500 when logout service throws unexpectedly', async () => {
+    mockLogout.mockRejectedValue(new Error('DB down'));
+
+    const res = await request(app)
+      .post('/api/v1/auth/logout')
+      .set('Cookie', 'refreshToken=valid-token');
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ error: 'Internal server error' });
+  });
 });
 
 // ---------------------------------------------------------------------------
