@@ -2,10 +2,10 @@
 set -e
 
 echo "Running database migrations..."
-npx prisma migrate deploy
+pnpm exec prisma migrate deploy
 
 echo "Seeding database..."
-npx prisma db seed
+pnpm exec prisma db seed
 
 echo "Starting backend server..."
-exec npm run dev
+exec pnpm dev
