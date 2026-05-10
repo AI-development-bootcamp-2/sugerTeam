@@ -45,8 +45,8 @@
 
 - [X] T012 [US6] Implement AuthService: login(email, password) — find active user by email (401 if not found or status INACTIVE), bcrypt.compare password (401 if mismatch), sign JWT access token (HS256, 2h, payload {sub: userId, role}), sign refresh token (HS256, 30d), return { accessToken, user: {id, fullName, role} }; refreshTokens(refreshToken) — verify refresh JWT, return new token pair; logout() — no server state needed (cookie cleared by route): backend/src/services/auth.service.ts
 - [X] T013 [US6] Implement POST /auth/login (body: {email, password} Zod-validated, sets refreshToken httpOnly sameSite=strict cookie, returns accessToken + user), POST /auth/refresh (reads refreshToken cookie, returns new accessToken + user, sets new cookie), POST /auth/logout (clears refreshToken cookie, returns 204) routes: backend/src/routes/auth.ts
-- [ ] T014 [US6] Implement authenticateToken middleware: extract Bearer token from Authorization header, verify JWT, attach decoded {userId, role} to req.user; return 401 JSON if missing or expired; implement requireRole(...roles: UserRole[]) factory returning middleware that checks req.user.role and returns 403 if not in allowed list: backend/src/middleware/auth.ts, backend/src/middleware/roleGuard.ts
-- [ ] T015 [US6] Implement checkMonthLock middleware factory: extract year+month from req.body.date or req.params (yyyy-mm format); query MonthLock table with prisma client; if isLocked true and req.user.role !== ADMIN, return 423 JSON { error: "החודש נעול, לא ניתן לבצע שינויים" }: backend/src/middleware/monthLock.ts
+- [X] T014 [US6] Implement authenticateToken middleware: extract Bearer token from Authorization header, verify JWT, attach decoded {userId, role} to req.user; return 401 `{ error: "טוקן חסר או לא תקין" }` if missing or expired; implement requireRole(...roles: UserRole[]) factory returning middleware that checks req.user.role and returns 403 `{ error: "אין לך הרשאה לבצע פעולה זו" }` if not in allowed list; define global Express Request type augmentation `declare namespace Express { interface Request { user: { userId: string; role: UserRole } } }` in a standalone declaration file so all middleware files can read req.user without importing auth.ts: backend/src/middleware/auth.ts, backend/src/middleware/roleGuard.ts, backend/src/types/express.d.ts
+- [X] T015 [US6] Implement checkMonthLock middleware factory: read `:yearMonth` route param first (format `"yyyy-mm"`); if absent, parse year+month from `req.body.date` (ISO `"yyyy-mm-dd"` string); query MonthLock table with prisma client; if no row found treat month as implicitly unlocked and allow request; if `isLocked` is true and `req.user.role !== ADMIN`, return 423 `{ error: "החודש נעול, לא ניתן לבצע שינויים" }`; must be applied after authenticateToken (depends on req.user): backend/src/middleware/monthLock.ts
 - [ ] T016 [US6] Register all route files on Express app under /api/v1 prefix (app.use('/api/v1/auth', authRouter)); add 404 handler (unknown route → 404 JSON) and global error handler middleware (logs error, returns 500 JSON); export app from app.ts: backend/src/app.ts (extend)
 
 **Checkpoint**: POST /auth/login valid → 200 + accessToken + httpOnly cookie; invalid password → 401; inactive user → 401; POST /auth/refresh → 200 new token pair + new cookie; POST /auth/logout → 204 cookie cleared
@@ -65,6 +65,21 @@
 ---
 
 ## Clarifications
+
+### Session 2026-05-10
+
+- Q: Where should the TypeScript `req.user` type augmentation be defined for T014? → A: Separate `backend/src/types/express.d.ts` global declaration file — available to all middleware files automatically without circular imports
+- Q: For T015, how should year+month be extracted from `req.params`? → A: Single `:yearMonth` param in `"yyyy-mm"` format; fall back to parsing `req.body.date` ISO string when no param is present
+- Q: For T014, what should the 401 and 403 error response bodies look like? → A: Hebrew `{ error: "..." }` shape — `{ error: "טוקן חסר או לא תקין" }` for 401, `{ error: "אין לך הרשאה לבצע פעולה זו" }` for 403 — consistent with T015 and FR-039
+- Q: For T014, what algorithm should jwt.verify enforce? → A: Pin to `{ algorithms: ['HS256'] }` — prevents algorithm-confusion attacks (e.g., alg:none). Required even though not stated in the task.
+- Q: For T014, what if JWT_ACCESS_SECRET is missing from env? → A: Return 500 `{ error: "שגיאת שרת פנימית" }` — a missing secret is a deployment error, not an auth failure.
+- Q: For T014, what if the JWT payload has a valid signature but an empty sub or unrecognized role? → A: Return 401 `{ error: "טוקן חסר או לא תקין" }` — treat tampered/malformed payloads the same as invalid tokens.
+- Q: For T014, what if requireRole() is called with zero arguments? → A: Throw at construction time — a zero-role guard would silently deny everyone; fail loudly instead.
+- Q: For T014, what if requireRole runs before authenticateToken (req.user missing)? → A: Return 401 — defensive guard against middleware misconfiguration; not a normal runtime case.
+- Q: For T015, what if req.body.date is not strict ISO yyyy-mm-dd? → A: Validate with `/^\d{4}-\d{2}-\d{2}$/` regex before parsing and return 400 — the original regex lacked the `$` anchor and was never applied to body.date.
+- Q: For T015, what year range is valid? → A: 2000–2100 — an integer-only check on year passes nonsensical values like year=0; business dates fall within this window.
+- Q: For T015, how should the ADMIN role be compared in the lock check? → A: Use `UserRole.ADMIN` (Prisma enum import) not the string literal `'ADMIN'` — enum reference is refactor-safe.
+- Q: For T015, what if neither :yearMonth param nor req.body.date is present? → A: Call next() and treat the month as implicitly unlocked — the middleware is optional context; routes that always require a date should validate it separately.
 
 ### Session 2026-05-09
 
