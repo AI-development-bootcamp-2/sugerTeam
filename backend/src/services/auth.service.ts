@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { UserRole, UserStatus } from '@prisma/client';
-import prisma from '../prisma/client';
+import { prisma } from '../prisma/client';
 
 // Fail at module load rather than at the first sign/verify call — jwt throws a
 // cryptic "secretOrPrivateKey must have a value" deep in the stack otherwise,
@@ -30,7 +30,7 @@ function signAccess(userId: string, role: UserRole): string {
   return jwt.sign(
     { sub: userId, role },
     process.env.JWT_ACCESS_SECRET!,
-    { algorithm: 'HS256', expiresIn: (process.env.JWT_ACCESS_EXPIRES_IN ?? '2h') as string }
+    { algorithm: 'HS256', expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '2h' } as jwt.SignOptions
   );
 }
 
@@ -38,7 +38,7 @@ function signRefresh(userId: string): string {
   return jwt.sign(
     { sub: userId },
     process.env.JWT_REFRESH_SECRET!,
-    { algorithm: 'HS256', expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '30d') as string }
+    { algorithm: 'HS256', expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d' } as jwt.SignOptions
   );
 }
 
