@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter backend exec prisma generate
+
+      - name: Lint (parallel)
+        run: |
+          pnpm --filter backend lint & PID1=$!
+          pnpm --filter frontend lint & PID2=$!
+          wait $PID1; R1=$?
+          wait $PID2; R2=$?
+          exit $((R1 | R2))
+
+      - name: Type-check (parallel)
+        run: |
+          pnpm --filter backend exec tsc --noEmit & PID1=$!
+          pnpm --filter frontend exec tsc -p tsconfig.app.json --noEmit & PID2=$!
+          wait $PID1; R1=$?
+          wait $PID2; R2=$?
+          exit $((R1 | R2))
+
+      - name: Test backend
+        run: |
+          if [ -f "backend/node_modules/.bin/jest" ]; then
+            pnpm --filter backend test
+          else
+            echo "Jest not installed, skipping tests (run T002 to set up Jest)"
+          fi
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
