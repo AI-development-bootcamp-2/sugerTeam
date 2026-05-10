@@ -36,6 +36,7 @@ beforeEach(() => jest.clearAllMocks());
 
 describe('POST /api/v1/auth/login', () => {
   it('200 + accessToken + httpOnly cookie on valid credentials', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockLogin.mockResolvedValue({ accessToken: 'acc', refreshToken: 'ref', user: fakeUser } as any);
 
     const res = await request(app)
@@ -48,7 +49,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('401 on wrong password', async () => {
-    mockLogin.mockRejectedValue(new (AuthService.AuthError as any)(401, 'Invalid credentials'));
+    mockLogin.mockRejectedValue(new AuthService.AuthError(401, 'Invalid credentials'));
 
     const res = await request(app)
       .post('/api/v1/auth/login')
@@ -59,7 +60,7 @@ describe('POST /api/v1/auth/login', () => {
   });
 
   it('401 on inactive user', async () => {
-    mockLogin.mockRejectedValue(new (AuthService.AuthError as any)(401, 'Inactive'));
+    mockLogin.mockRejectedValue(new AuthService.AuthError(401, 'Inactive'));
 
     const res = await request(app)
       .post('/api/v1/auth/login')
@@ -102,11 +103,8 @@ describe('POST /api/v1/auth/login', () => {
 
 describe('POST /api/v1/auth/refresh', () => {
   it('200 + new tokens + new cookie when valid refresh cookie present', async () => {
-    mockRefreshTokens.mockResolvedValue({
-      accessToken: 'new-acc',
-      refreshToken: 'new-ref',
-      user: fakeUser,
-    } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockRefreshTokens.mockResolvedValue({ accessToken: 'new-acc', refreshToken: 'new-ref', user: fakeUser } as any);
 
     const res = await request(app)
       .post('/api/v1/auth/refresh')
@@ -124,7 +122,7 @@ describe('POST /api/v1/auth/refresh', () => {
   });
 
   it('401 on expired or invalid refresh token', async () => {
-    mockRefreshTokens.mockRejectedValue(new (AuthService.AuthError as any)(401, 'Expired'));
+    mockRefreshTokens.mockRejectedValue(new AuthService.AuthError(401, 'Expired'));
 
     const res = await request(app)
       .post('/api/v1/auth/refresh')
