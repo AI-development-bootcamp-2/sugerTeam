@@ -1,0 +1,13 @@
+{
+  "name": "time-reporting-system",
+  "private": true,
+  "packageManager": "pnpm@10.33.4",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "bcrypt", "prisma"],
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "eslint-plugin-react>eslint": "10"
+      }
+    }
+  }
+}

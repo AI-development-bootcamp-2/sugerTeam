@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files — never commit real secrets
+.env*
+!.env.example
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Uploads — local filesystem storage for absence documents
+uploads/
+
+# Test coverage output (Jest + Vitest)
+coverage/
+
+# Vite cache
+.vite/
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.tmp
+
+# Claude Code local settings
+.claude/settings.local.json

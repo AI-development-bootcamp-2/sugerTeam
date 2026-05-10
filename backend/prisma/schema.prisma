@@ -1,0 +1,265 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  EMPLOYEE
+  TEAM_LEAD
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TaskStatus {
+  OPEN
+  CLOSED
+}
+
+enum DailyReportStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum WorkLocation {
+  OFFICE
+  CLIENT
+  HOME
+}
+
+enum AbsenceType {
+  VACATION
+  SICK_LEAVE
+  MILITARY_RESERVE
+  OTHER
+}
+
+enum AbsenceStatus {
+  SUBMITTED
+  DOCUMENT_PENDING
+}
+
+enum AuditEntityType {
+  DAILY_REPORT
+  TIME_ENTRY
+  ABSENCE_REPORT
+}
+
+enum AuditAction {
+  UPDATE
+  DELETE
+}
+
+enum DayType {
+  REGULAR
+  WEEKEND
+  HOLIDAY
+  SPECIAL
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(uuid())
+  fullName     String
+  email        String     @unique
+  passwordHash String
+  role         UserRole   @default(EMPLOYEE)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  dailyReports     DailyReport[]
+  absenceReports   AbsenceReport[]
+  taskAssignments  TaskAssignment[]  @relation("AssignedUser")
+  assignedByMe     TaskAssignment[]  @relation("AssignedBy")
+  lockedMonths     MonthLock[]       @relation("LockedBy")
+  reopenedMonths   MonthLock[]       @relation("ReopenedBy")
+  auditPerformed   AuditLog[]        @relation("PerformedBy")
+  auditTargeted    AuditLog[]        @relation("TargetUser")
+  absenceDocuments AbsenceDocument[]
+}
+
+model Client {
+  id        String       @id @default(uuid())
+  name      String
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
+
+  projects    Project[]
+  timeEntries TimeReportEntry[]
+}
+
+model Project {
+  id        String       @id @default(uuid())
+  clientId  String
+  name      String
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  deletedAt DateTime?
+
+  client      Client            @relation(fields: [clientId], references: [id])
+  tasks       Task[]
+  timeEntries TimeReportEntry[]
+}
+
+model Task {
+  id        String     @id @default(uuid())
+  projectId String
+  name      String
+  status    TaskStatus @default(OPEN)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  closedAt  DateTime?
+  deletedAt DateTime?
+
+  project     Project           @relation(fields: [projectId], references: [id])
+  assignments TaskAssignment[]
+  timeEntries TimeReportEntry[]
+}
+
+model TaskAssignment {
+  id         String   @id @default(uuid())
+  taskId     String
+  userId     String
+  assignedBy String
+  createdAt  DateTime @default(now())
+
+  task           Task @relation(fields: [taskId], references: [id])
+  user           User @relation("AssignedUser", fields: [userId], references: [id])
+  assignedByUser User @relation("AssignedBy", fields: [assignedBy], references: [id])
+
+  @@unique([taskId, userId])
+}
+
+model DailyReport {
+  id         String            @id @default(uuid())
+  userId     String
+  reportDate DateTime          @db.Date
+  startTime  DateTime          @db.Time(0)
+  endTime    DateTime          @db.Time(0)
+  status     DailyReportStatus @default(DRAFT)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
+
+  user    User              @relation(fields: [userId], references: [id])
+  entries TimeReportEntry[]
+
+  // Partial unique (userId, reportDate) WHERE deletedAt IS NULL is added
+  // as raw SQL in the migration — Prisma DSL cannot express the WHERE clause.
+  @@index([userId, reportDate])
+}
+
+model TimeReportEntry {
+  id              String       @id @default(uuid())
+  dailyReportId   String
+  workLocation    WorkLocation
+  clientId        String
+  projectId       String
+  taskId          String
+  startTime       DateTime     @db.Time(0)
+  endTime         DateTime     @db.Time(0)
+  durationMinutes Int
+  description     String?      @db.VarChar(500)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  dailyReport DailyReport @relation(fields: [dailyReportId], references: [id])
+  client      Client      @relation(fields: [clientId], references: [id])
+  project     Project     @relation(fields: [projectId], references: [id])
+  task        Task        @relation(fields: [taskId], references: [id])
+
+  @@index([dailyReportId])
+  @@index([taskId])
+}
+
+model AbsenceReport {
+  id                    String        @id @default(uuid())
+  userId                String
+  absenceType           AbsenceType
+  startDate             DateTime      @db.Date
+  endDate               DateTime      @db.Date
+  isPartial             Boolean       @default(false)
+  partialDurationHours  Decimal?      @db.Decimal(5, 2)
+  calculatedAbsenceDays Int
+  status                AbsenceStatus @default(SUBMITTED)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  deletedAt             DateTime?
+
+  user      User              @relation(fields: [userId], references: [id])
+  documents AbsenceDocument[]
+}
+
+model AbsenceDocument {
+  id              String   @id @default(uuid())
+  absenceReportId String
+  fileName        String
+  storagePath     String
+  mimeType        String
+  uploadedBy      String
+  uploadedAt      DateTime @default(now())
+
+  absenceReport AbsenceReport @relation(fields: [absenceReportId], references: [id])
+  uploader      User          @relation(fields: [uploadedBy], references: [id])
+}
+
+model MonthLock {
+  id         String    @id @default(uuid())
+  year       Int
+  month      Int
+  isLocked   Boolean   @default(false)
+  lockedBy   String?
+  lockedAt   DateTime?
+  reopenedBy String?
+  reopenedAt DateTime?
+
+  lockedByUser   User? @relation("LockedBy", fields: [lockedBy], references: [id])
+  reopenedByUser User? @relation("ReopenedBy", fields: [reopenedBy], references: [id])
+
+  @@unique([year, month])
+}
+
+model AuditLog {
+  id           String          @id @default(uuid())
+  entityType   AuditEntityType
+  entityId     String
+  action       AuditAction
+  performedBy  String
+  targetUserId String
+  oldValue     Json
+  newValue     Json?
+  createdAt    DateTime        @default(now())
+
+  performer  User @relation("PerformedBy", fields: [performedBy], references: [id])
+  targetUser User @relation("TargetUser", fields: [targetUserId], references: [id])
+}
+
+model WorkCalendarDay {
+  id            String   @id @default(uuid())
+  date          DateTime @unique @db.Date
+  dayType       DayType
+  isWorkingDay  Boolean
+  standardHours Decimal  @default(9.0) @db.Decimal(4, 2)
+  description   String?
+}
