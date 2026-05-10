@@ -49,7 +49,7 @@
 - [X] T015 [US6] Implement checkMonthLock middleware factory: read `:yearMonth` route param first (format `"yyyy-mm"`); if absent, parse year+month from `req.body.date` (ISO `"yyyy-mm-dd"` string); query MonthLock table with prisma client; if no row found treat month as implicitly unlocked and allow request; if `isLocked` is true and `req.user.role !== ADMIN`, return 423 `{ error: "החודש נעול, לא ניתן לבצע שינויים" }`; must be applied after authenticateToken (depends on req.user): backend/src/middleware/monthLock.ts
 - [X] T016 [US6] Register all route files on Express app under /api/v1 prefix (app.use('/api/v1/auth', authRouter)); fix CORS origin from `process.env.CLIENT_URL` to `process.env.VITE_API_URL` (per T007 clarification — both services share the same .env); add 404 handler (unknown route → 404 JSON) and global error handler middleware (logs error, returns 500 JSON); export app from app.ts: backend/src/app.ts (extend)
 
-**Checkpoint**: POST /auth/login valid → 200 + accessToken + httpOnly cookie; invalid password → 401; inactive user → 401; POST /auth/refresh → 200 new token pair + new cookie; POST /auth/logout → 204 cookie cleared
+**Checkpoint**: POST /api/v1/auth/login valid → 200 + accessToken + httpOnly cookie; invalid password → 401; inactive user → 401; POST /api/v1/auth/refresh → 200 new token pair + new cookie; POST /api/v1/auth/logout → 204 cookie cleared; GET /api/v1/nonexistent → 404 JSON; unhandled error → 500 JSON
 
 ---
 
