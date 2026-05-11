@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import type { UserRole } from '@prisma/client';
+//import type { UserRole } from '@prisma/client';
 import { authenticateToken } from '@/middleware/auth';
 import { requireRole } from '@/middleware/roleGuard';
 import {
