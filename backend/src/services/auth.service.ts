@@ -1,93 +1,168 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { UserRole, UserStatus } from '@prisma/client';
-import { prisma } from '../prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import { prisma } from '@/prisma/client';
 
-// Fail at module load rather than at the first sign/verify call — jwt throws a
-// cryptic "secretOrPrivateKey must have a value" deep in the stack otherwise,
-// making misconfigured deployments very hard to diagnose.
 if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
   throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be set');
 }
 
-// Pre-computed at startup so bcrypt.compare always runs the full cost-12 work,
-// preventing timing-based email enumeration when the user doesn't exist.
+const PASSWORD_MAX_AGE_DAYS = 30;
+const REFRESH_LIFETIME_DAYS = 30;
+
+// Pre-computed to prevent timing-based email enumeration when the user doesn't exist
 const DUMMY_HASH = bcrypt.hashSync('__timing_guard__', 12);
 
-interface AuthResult {
-  accessToken: string;
-  refreshToken: string;
-  user: { id: string; fullName: string; role: UserRole };
-}
-
 export class AuthError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
     super(message);
+    this.name = 'AuthError';
   }
 }
 
-function signAccess(userId: string, role: UserRole): string {
-  return jwt.sign(
-    { sub: userId, role },
-    process.env.JWT_ACCESS_SECRET!,
-    { algorithm: 'HS256', expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '2h' } as jwt.SignOptions
-  );
+function refreshExpiresAt(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + REFRESH_LIFETIME_DAYS);
+  return d;
 }
 
-function signRefresh(userId: string): string {
-  return jwt.sign(
-    { sub: userId },
-    process.env.JWT_REFRESH_SECRET!,
-    { algorithm: 'HS256', expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d' } as jwt.SignOptions
-  );
+function signAccess(userId: string, role: string): string {
+  return jwt.sign({ sub: userId, role }, process.env.JWT_ACCESS_SECRET!, {
+    algorithm: 'HS256',
+    expiresIn: (process.env.JWT_ACCESS_EXPIRES_IN ?? '2h') as string,
+  } as jwt.SignOptions);
 }
 
-export async function login(email: string, password: string): Promise<AuthResult> {
-  const user = await prisma.user.findFirst({ where: { email: email.toLowerCase(), deletedAt: null } });
+function signRefresh(userId: string, jti: string): string {
+  return jwt.sign({ sub: userId, jti }, process.env.JWT_REFRESH_SECRET!, {
+    algorithm: 'HS256',
+    expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '30d') as string,
+  } as jwt.SignOptions);
+}
 
-  // Always compare to prevent timing-based email enumeration
+interface TokenResult {
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; fullName: string; role: string };
+}
+
+export async function login(
+  email: string,
+  password: string,
+  userAgent?: string,
+  ipAddress?: string,
+): Promise<TokenResult> {
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+
+  // Always run bcrypt to prevent timing-based email enumeration
   const hash = user?.passwordHash ?? DUMMY_HASH;
-  const match = await bcrypt.compare(password, hash);
+  const valid = await bcrypt.compare(password, hash);
 
-  if (!user || user.status === UserStatus.INACTIVE || !match) {
+  if (!user || user.status === 'INACTIVE' || !valid) {
     throw new AuthError(401, 'Invalid credentials');
   }
 
-  return {
-    accessToken: signAccess(user.id, user.role),
-    refreshToken: signRefresh(user.id),
-    user: { id: user.id, fullName: user.fullName, role: user.role },
-  };
+  // null = seeded admin account, exempt from 30-day rotation
+  if (user.passwordChangedAt !== null) {
+    const ageDays =
+      (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24);
+    if (ageDays > PASSWORD_MAX_AGE_DAYS) {
+      throw new AuthError(401, 'Password has expired; please change it');
+    }
+  }
+
+  const jti = uuidv4();
+  const accessToken = signAccess(user.id, user.role);
+  const refreshToken = signRefresh(user.id, jti);
+
+  await prisma.refreshToken.create({
+    data: {
+      userId: user.id,
+      jti,
+      expiresAt: refreshExpiresAt(),
+      userAgent: userAgent ?? null,
+      ipAddress: ipAddress ?? null,
+    },
+  });
+
+  return { accessToken, refreshToken, user: { id: user.id, fullName: user.fullName, role: user.role } };
 }
 
-export async function refreshTokens(refreshToken: string): Promise<AuthResult> {
-  let userId: string;
+export async function refreshTokens(refreshToken: string): Promise<TokenResult> {
+  let payload: { sub: string; jti: string };
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
-    if (typeof decoded === 'string' || !decoded.sub) {
-      throw new AuthError(401, 'Invalid refresh token');
-    }
-    userId = decoded.sub as string;
-  } catch (err) {
-    if (err instanceof AuthError) throw err;
+    payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!, {
+      algorithms: ['HS256'],
+    }) as { sub: string; jti: string };
+  } catch {
     throw new AuthError(401, 'Invalid refresh token');
   }
 
-  const user = await prisma.user.findFirst({
-    where: { id: userId, deletedAt: null, status: UserStatus.ACTIVE },
-  });
+  const record = await prisma.refreshToken.findUnique({ where: { jti: payload.jti } });
+  if (!record || record.revokedAt !== null || record.expiresAt < new Date()) {
+    throw new AuthError(401, 'Refresh token revoked or expired');
+  }
 
-  if (!user) {
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user || user.status === 'INACTIVE') {
     throw new AuthError(401, 'User not found or inactive');
   }
 
-  return {
-    accessToken: signAccess(user.id, user.role),
-    refreshToken: signRefresh(user.id),
-    user: { id: user.id, fullName: user.fullName, role: user.role },
-  };
+  const newJti = uuidv4();
+  // Atomic: revoke old token and issue new one
+  await prisma.$transaction([
+    prisma.refreshToken.update({
+      where: { jti: payload.jti },
+      data: { revokedAt: new Date() },
+    }),
+    prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        jti: newJti,
+        expiresAt: refreshExpiresAt(),
+        userAgent: record.userAgent,
+        ipAddress: record.ipAddress,
+      },
+    }),
+  ]);
+
+  const accessToken = signAccess(user.id, user.role);
+  const newRefreshToken = signRefresh(user.id, newJti);
+
+  return { accessToken, refreshToken: newRefreshToken, user: { id: user.id, fullName: user.fullName, role: user.role } };
 }
 
-export function logout(): void {
-  // No server state to clear; cookie is handled by the route
+export async function logout(refreshToken: string): Promise<void> {
+  let payload: { jti: string };
+  try {
+    payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!, {
+      algorithms: ['HS256'],
+    }) as { jti: string };
+  } catch {
+    // expired or invalid token — treat as already logged out
+    return;
+  }
+
+  await prisma.refreshToken.updateMany({
+    where: { jti: payload.jti, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+export async function changePassword(userId: string, newPassword: string): Promise<void> {
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, passwordChangedAt: new Date() },
+    }),
+    // Revoke all active sessions across all devices
+    prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
 }

@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserRole } from '@prisma/client';
 
+export interface AuthPayload {
+  userId: string;
+  role: UserRole;
+}
+
 interface TokenPayload {
   sub: string;
   role: UserRole;
@@ -26,7 +31,11 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
   try {
     const payload = jwt.verify(token, secret, { algorithms: ['HS256'] }) as TokenPayload;
-    if (typeof payload.sub !== 'string' || payload.sub.length === 0 || !VALID_ROLES.has(payload.role)) {
+    if (
+      typeof payload.sub !== 'string' ||
+      payload.sub.length === 0 ||
+      !VALID_ROLES.has(payload.role)
+    ) {
       res.status(401).json({ error: 'טוקן חסר או לא תקין' });
       return;
     }
