@@ -74,15 +74,16 @@ enum DayType {
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
-  id           String     @id @default(uuid())
-  fullName     String
-  email        String     @unique
-  passwordHash String
-  role         UserRole   @default(EMPLOYEE)
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
+  id                String     @id @default(uuid())
+  fullName          String
+  email             String     @unique
+  passwordHash      String
+  passwordChangedAt DateTime?
+  role              UserRole   @default(EMPLOYEE)
+  status            UserStatus @default(ACTIVE)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  deletedAt         DateTime?
 
   dailyReports     DailyReport[]
   absenceReports   AbsenceReport[]
@@ -93,6 +94,7 @@ model User {
   auditPerformed   AuditLog[]        @relation("PerformedBy")
   auditTargeted    AuditLog[]        @relation("TargetUser")
   absenceDocuments AbsenceDocument[]
+  refreshTokens    RefreshToken[]
 }
 
 model Client {
@@ -164,8 +166,6 @@ model DailyReport {
   user    User              @relation(fields: [userId], references: [id])
   entries TimeReportEntry[]
 
-  // Partial unique (userId, reportDate) WHERE deletedAt IS NULL is added
-  // as raw SQL in the migration — Prisma DSL cannot express the WHERE clause.
   @@index([userId, reportDate])
 }
 
@@ -253,6 +253,21 @@ model AuditLog {
 
   performer  User @relation("PerformedBy", fields: [performedBy], references: [id])
   targetUser User @relation("TargetUser", fields: [targetUserId], references: [id])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  jti       String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model WorkCalendarDay {
