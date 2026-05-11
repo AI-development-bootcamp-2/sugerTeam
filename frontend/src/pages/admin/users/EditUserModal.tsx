@@ -4,7 +4,7 @@ import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useUpdateUser, useDeactivateUser, useActivateUser } from '../../../services/users.service';
 import { ROLE_LABELS, ALL_ROLES } from './userConstants';
-import type { User, UserRole } from '../../../types/entities';
+import type { User } from '../../../types/entities';
 
 const editUserSchema = z.object({
   fullName: z.string().min(1, 'שדה חובה'),

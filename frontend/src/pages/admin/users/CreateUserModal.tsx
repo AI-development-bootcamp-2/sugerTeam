@@ -4,7 +4,6 @@ import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useCreateUser } from '../../../services/users.service';
 import { ROLE_LABELS, ALL_ROLES } from './userConstants';
-import type { UserRole } from '../../../types/entities';
 
 const createUserSchema = z.object({
   fullName: z.string().min(1, 'שדה חובה'),
