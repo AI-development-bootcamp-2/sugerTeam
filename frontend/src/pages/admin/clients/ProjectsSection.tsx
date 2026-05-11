@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   useActiveProjects,
+  useActiveClients,
   useCreateProject,
   useUpdateProject,
   useManagers,
@@ -35,6 +36,8 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
   } = useForm<ProjectForm>({ defaultValues: { name: project.name } });
   const updateProject = useUpdateProject();
   const { data: managers } = useManagers();
+  const { data: clients } = useActiveClients();
+  const clientName = clients?.find((c) => c.id === project.clientId)?.name ?? '';
   const startDate = watch('startDate');
 
   return (
@@ -61,12 +64,29 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
 
-      <textarea
-        {...register('description')}
-        placeholder="תיאור (אופציונלי)"
-        rows={2}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שם לקוח</label>
+        <input
+          disabled
+          value={clientName}
+          className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
+        <select
+          {...register('primaryManagerId')}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- ללא מנהל --</option>
+          {managers?.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.fullName}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex gap-2">
         <div className="flex-1">
@@ -91,20 +111,12 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
         </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
-        <select
-          {...register('primaryManagerId')}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">-- ללא מנהל --</option>
-          {managers?.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.fullName}
-            </option>
-          ))}
-        </select>
-      </div>
+      <textarea
+        {...register('description')}
+        placeholder="תאר בקצרה את הפרויקט"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
 
       <div className="flex gap-2">
         <button
@@ -167,7 +179,7 @@ function ProjectRow({ project }: { project: ActiveProject }) {
       {showBody && (
         <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-2">
           {isEditing && <EditProjectForm project={project} onClose={() => setIsEditing(false)} />}
-          {isExpanded && <TasksSection projectId={project.id} />}
+          {isExpanded && <TasksSection projectId={project.id} clientId={project.clientId} />}
         </div>
       )}
     </div>
@@ -184,6 +196,8 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
   } = useForm<ProjectForm>();
   const createProject = useCreateProject();
   const { data: managers } = useManagers();
+  const { data: clients } = useActiveClients();
+  const clientName = clients?.find((c) => c.id === clientId)?.name ?? '';
   const startDate = watch('startDate');
 
   return (
@@ -210,12 +224,29 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
 
-      <textarea
-        {...register('description')}
-        placeholder="תיאור (אופציונלי)"
-        rows={2}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שם לקוח</label>
+        <input
+          disabled
+          value={clientName}
+          className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
+        <select
+          {...register('primaryManagerId')}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- ללא מנהל --</option>
+          {managers?.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.fullName}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="flex gap-2">
         <div className="flex-1">
@@ -240,20 +271,12 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
         </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
-        <select
-          {...register('primaryManagerId')}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">-- ללא מנהל --</option>
-          {managers?.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.fullName}
-            </option>
-          ))}
-        </select>
-      </div>
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
 
       <div className="flex gap-2">
         <button

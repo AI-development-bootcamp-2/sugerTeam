@@ -56,7 +56,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {projectId && <TasksSection projectId={projectId} />}
+      {projectId && <TasksSection projectId={projectId} clientId={clientId} />}
     </main>
   );
 }

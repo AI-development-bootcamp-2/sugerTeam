@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   useActiveTasks,
+  useActiveProjects,
   useCreateTask,
   useUpdateTask,
 } from '../../../services/entities.service';
 
 interface TasksSectionProps {
   projectId: string;
+  clientId: string;
 }
 
 interface TaskForm {
@@ -23,7 +25,7 @@ interface ActiveTask {
   projectId: string;
 }
 
-function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void }) {
+function EditTaskForm({ task, clientId, onClose }: { task: ActiveTask; clientId: string; onClose: () => void }) {
   const {
     register,
     handleSubmit,
@@ -31,6 +33,8 @@ function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void
     formState: { errors },
   } = useForm<TaskForm>({ defaultValues: { name: task.name } });
   const updateTask = useUpdateTask();
+  const { data: projects } = useActiveProjects(clientId);
+  const projectName = projects?.find((p) => p.id === task.projectId)?.name ?? '';
   const startDate = watch('startDate');
 
   return (
@@ -56,12 +60,14 @@ function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
 
-      <textarea
-        {...register('description')}
-        placeholder="תיאור (אופציונלי)"
-        rows={2}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך לפרויקט קיים</label>
+        <input
+          disabled
+          value={projectName}
+          className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+        />
+      </div>
 
       <div className="flex gap-2">
         <div className="flex-1">
@@ -86,6 +92,13 @@ function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void
         </div>
       </div>
 
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
       <div className="flex gap-2">
         <button
           type="submit"
@@ -106,7 +119,7 @@ function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void
   );
 }
 
-function TaskRow({ task }: { task: ActiveTask }) {
+function TaskRow({ task, clientId }: { task: ActiveTask; clientId: string }) {
   const [isEditing, setIsEditing] = useState(false);
   const updateTask = useUpdateTask();
 
@@ -137,14 +150,14 @@ function TaskRow({ task }: { task: ActiveTask }) {
       </div>
       {isEditing && (
         <div className="border-t border-gray-100 px-3 py-2">
-          <EditTaskForm task={task} onClose={() => setIsEditing(false)} />
+          <EditTaskForm task={task} clientId={clientId} onClose={() => setIsEditing(false)} />
         </div>
       )}
     </div>
   );
 }
 
-function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
+function CreateTaskForm({ projectId, clientId, onClose }: { projectId: string; clientId: string; onClose: () => void }) {
   const {
     register,
     handleSubmit,
@@ -153,6 +166,8 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
     formState: { errors },
   } = useForm<TaskForm>();
   const createTask = useCreateTask();
+  const { data: projects } = useActiveProjects(clientId);
+  const projectName = projects?.find((p) => p.id === projectId)?.name ?? '';
   const startDate = watch('startDate');
 
   return (
@@ -178,12 +193,14 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
 
-      <textarea
-        {...register('description')}
-        placeholder="תיאור (אופציונלי)"
-        rows={2}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך לפרויקט קיים</label>
+        <input
+          disabled
+          value={projectName}
+          className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+        />
+      </div>
 
       <div className="flex gap-2">
         <div className="flex-1">
@@ -208,6 +225,13 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
         </div>
       </div>
 
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
       <div className="flex gap-2">
         <button
           type="submit"
@@ -228,7 +252,7 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
   );
 }
 
-export default function TasksSection({ projectId }: TasksSectionProps) {
+export default function TasksSection({ projectId, clientId }: TasksSectionProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const { data: tasks, isLoading } = useActiveTasks(projectId);
 
@@ -239,11 +263,11 @@ export default function TasksSection({ projectId }: TasksSectionProps) {
       {isLoading && <p className="text-sm text-gray-400">טוען...</p>}
 
       {tasks?.map((task) => (
-        <TaskRow key={task.id} task={task} />
+        <TaskRow key={task.id} task={task} clientId={clientId} />
       ))}
 
       {showCreateForm ? (
-        <CreateTaskForm projectId={projectId} onClose={() => setShowCreateForm(false)} />
+        <CreateTaskForm projectId={projectId} clientId={clientId} onClose={() => setShowCreateForm(false)} />
       ) : (
         <button
           type="button"
