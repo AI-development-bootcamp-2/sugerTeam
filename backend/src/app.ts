@@ -3,6 +3,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
+import clientsRouter from './routes/clients';
+import projectsRouter from './routes/projects';
 
 const app = express();
 
@@ -12,6 +14,8 @@ app.use(cookieParser());
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/clients', clientsRouter);
+app.use('/api/v1/projects', projectsRouter);
 
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
