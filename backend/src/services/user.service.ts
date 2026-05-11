@@ -13,7 +13,8 @@ export class ConflictError extends Error {
 export type SafeUser = Omit<User, 'passwordHash'>;
 
 function omitHash(user: User): SafeUser {
-  const { passwordHash: _ph, ...safe } = user;
+  const { passwordHash, ...safe } = user;
+  void passwordHash;
   return safe;
 }
 
