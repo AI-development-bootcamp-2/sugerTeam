@@ -24,7 +24,6 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   useEffect(() => {
     const currentToken = useAuthStore.getState().accessToken;
     if (currentToken !== null) {
-      setBootstrapping(false);
       return;
     }
 
