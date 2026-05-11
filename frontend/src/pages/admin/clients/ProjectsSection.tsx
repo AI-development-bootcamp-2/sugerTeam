@@ -5,6 +5,7 @@ import {
   useCreateProject,
   useUpdateProject,
 } from '../../../services/entities.service';
+import TasksSection from './TasksSection';
 
 interface ProjectsSectionProps {
   clientId: string;
@@ -62,11 +63,20 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
 
 function ProjectRow({ project }: { project: ActiveProject }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const updateProject = useUpdateProject();
+  const showBody = isEditing || isExpanded;
 
   return (
     <div className="rounded-md border border-gray-100 bg-gray-50">
       <div className="flex items-center gap-3 p-2">
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="text-xs text-gray-400 w-4"
+        >
+          {isExpanded ? '▲' : '▼'}
+        </button>
         <div className="flex flex-1 items-center gap-3">
           <span className="text-sm font-medium">{project.name}</span>
           <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
@@ -89,9 +99,10 @@ function ProjectRow({ project }: { project: ActiveProject }) {
           השבת
         </button>
       </div>
-      {isEditing && (
-        <div className="border-t border-gray-100 px-3 py-2">
-          <EditProjectForm project={project} onClose={() => setIsEditing(false)} />
+      {showBody && (
+        <div className="flex flex-col gap-3 border-t border-gray-100 px-3 py-2">
+          {isEditing && <EditProjectForm project={project} onClose={() => setIsEditing(false)} />}
+          {isExpanded && <TasksSection projectId={project.id} />}
         </div>
       )}
     </div>
