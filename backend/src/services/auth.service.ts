@@ -66,7 +66,7 @@ export async function login(
   }
 
   // null = seeded admin account, exempt from 30-day rotation
-  if (user.passwordChangedAt !== null) {
+  if (user.passwordChangedAt != null) {
     const ageDays =
       (Date.now() - user.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24);
     if (ageDays > PASSWORD_MAX_AGE_DAYS) {

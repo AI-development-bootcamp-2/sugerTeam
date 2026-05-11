@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { UserRole } from '@prisma/client';
+import type { UserRole } from '@prisma/client';
 
 export interface AuthPayload {
   userId: string;
@@ -12,7 +12,7 @@ interface TokenPayload {
   role: UserRole;
 }
 
-const VALID_ROLES = new Set<string>(Object.values(UserRole));
+const VALID_ROLES = new Set<string>(['EMPLOYEE', 'TEAM_LEAD', 'ADMIN']);
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
   const secret = process.env.JWT_ACCESS_SECRET;
