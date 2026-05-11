@@ -54,7 +54,10 @@ apiClient.interceptors.response.use(
     }
 
     // Refresh endpoint returned 401 — bail immediately to avoid infinite loop
-    if (originalRequest.url?.includes('/auth/refresh')) {
+    if (
+      originalRequest.method?.toUpperCase() === 'POST' &&
+      originalRequest.url?.endsWith('/auth/refresh')
+    ) {
       useAuthStore.getState().clearAuth();
       void router.navigate('/login');
       return Promise.reject(error);
@@ -72,6 +75,7 @@ apiClient.interceptors.response.use(
       return new Promise<string>((resolve, reject) => {
         pendingQueue.push({ resolve, reject });
       }).then((token) => {
+        originalRequest._retry = true;
         originalRequest.headers.Authorization = `Bearer ${token}`;
         return apiClient(originalRequest);
       });
