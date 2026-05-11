@@ -16,6 +16,7 @@ jest.mock('@/lib/prisma', () => ({
 const mockClient = {
   id: 'test-client-id',
   name: 'Test Client',
+  description: null,
   status: EntityStatus.ACTIVE,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -33,7 +34,7 @@ describe('createClient', () => {
     const result = await createClient({ name: 'Test Client' });
 
     expect(prisma.client.create).toHaveBeenCalledWith({
-      data: { name: 'Test Client', status: EntityStatus.ACTIVE },
+      data: expect.objectContaining({ name: 'Test Client', status: EntityStatus.ACTIVE }),
     });
     expect(result).toEqual(mockClient);
   });

@@ -15,12 +15,14 @@ const router = Router();
 router.use(authenticateToken);
 
 const createClientSchema = z.object({
-  name: z.string().min(1),
+  name:        z.string().min(1),
+  description: z.string().optional(),
 });
 
 const updateClientSchema = z.object({
-  name:     z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
+  name:        z.string().min(1).optional(),
+  description: z.string().optional(),
+  isActive:    z.boolean().optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },

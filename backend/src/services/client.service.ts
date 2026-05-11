@@ -2,10 +2,11 @@ import { EntityStatus } from '@prisma/client';
 import type { Client, Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
-export async function createClient(data: { name: string }): Promise<Client> {
+export async function createClient(data: { name: string; description?: string }): Promise<Client> {
   return prisma.client.create({
     data: {
       name: data.name,
+      description: data.description,
       status: EntityStatus.ACTIVE,
     },
   });
@@ -29,13 +30,12 @@ export async function listAllClients(): Promise<Client[]> {
 
 export async function updateClient(
   id: string,
-  data: { name?: string; isActive?: boolean },
+  data: { name?: string; description?: string; isActive?: boolean },
 ): Promise<Client> {
   const updateData: Prisma.ClientUpdateInput = {};
 
-  if (data.name !== undefined) {
-    updateData.name = data.name;
-  }
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
   if (data.isActive === false) {
     updateData.status = EntityStatus.INACTIVE;
     updateData.deletedAt = new Date();

@@ -18,18 +18,29 @@ const activeQuerySchema = z.object({
   projectId: z.string().uuid(),
 });
 
+const dateRefinement = (data: { startDate?: Date | null; endDate?: Date | null }) => {
+  if (data.startDate && data.endDate && data.endDate < data.startDate) return false;
+  return true;
+};
+
 const createTaskSchema = z.object({
-  projectId: z.string().uuid(),
-  name:      z.string().min(1),
-});
+  projectId:   z.string().uuid(),
+  name:        z.string().min(1),
+  description: z.string().optional(),
+  startDate:   z.coerce.date().optional(),
+  endDate:     z.coerce.date().optional(),
+}).refine(dateRefinement, { message: 'endDate must be on or after startDate', path: ['endDate'] });
 
 const updateTaskSchema = z.object({
-  name:     z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
+  name:        z.string().min(1).optional(),
+  description: z.string().optional(),
+  startDate:   z.coerce.date().nullable().optional(),
+  endDate:     z.coerce.date().nullable().optional(),
+  isActive:    z.boolean().optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },
-);
+).refine(dateRefinement, { message: 'endDate must be on or after startDate', path: ['endDate'] });
 
 router.get('/active', requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD), async (req: Request, res: Response, next: NextFunction) => {
   const result = activeQuerySchema.safeParse(req.query);

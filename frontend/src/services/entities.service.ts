@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './api';
-import type { Client, Project, Task } from '../types/entities';
+import type { Client, Project, Task, Manager } from '../types/entities';
 
 export function useActiveClients() {
   return useQuery({
@@ -25,7 +25,7 @@ export function useAllClients() {
 export function useCreateClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { name: string }) => {
+    mutationFn: async (payload: { name: string; description?: string }) => {
       const { data } = await apiClient.post<Client>('/api/v1/clients', payload);
       return data;
     },
@@ -38,7 +38,10 @@ export function useCreateClient() {
 export function useUpdateClient() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean }) => {
+    mutationFn: async ({
+      id,
+      ...payload
+    }: { id: string; name?: string; description?: string; isActive?: boolean }) => {
       const { data } = await apiClient.patch<Client>(`/api/v1/clients/${id}`, payload);
       return data;
     },
@@ -65,7 +68,14 @@ export function useActiveProjects(clientId: string | undefined) {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { clientId: string; name: string }) => {
+    mutationFn: async (payload: {
+      clientId: string;
+      name: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      primaryManagerId?: string;
+    }) => {
       const { data } = await apiClient.post<Project>('/api/v1/projects', payload);
       return data;
     },
@@ -78,7 +88,18 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean }) => {
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      name?: string;
+      description?: string;
+      startDate?: string | null;
+      endDate?: string | null;
+      primaryManagerId?: string | null;
+      isActive?: boolean;
+    }) => {
       const { data } = await apiClient.patch<Project>(`/api/v1/projects/${id}`, payload);
       return data;
     },
@@ -105,7 +126,13 @@ export function useActiveTasks(projectId: string | undefined) {
 export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { projectId: string; name: string }) => {
+    mutationFn: async (payload: {
+      projectId: string;
+      name: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+    }) => {
       const { data } = await apiClient.post<Task>('/api/v1/tasks', payload);
       return data;
     },
@@ -118,12 +145,32 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean }) => {
+    mutationFn: async ({
+      id,
+      ...payload
+    }: {
+      id: string;
+      name?: string;
+      description?: string;
+      startDate?: string | null;
+      endDate?: string | null;
+      isActive?: boolean;
+    }) => {
       const { data } = await apiClient.patch<Task>(`/api/v1/tasks/${id}`, payload);
       return data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useManagers() {
+  return useQuery({
+    queryKey: ['users', 'managers'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<Manager[]>('/api/v1/users/managers');
+      return data;
     },
   });
 }

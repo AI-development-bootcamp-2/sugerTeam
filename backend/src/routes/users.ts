@@ -6,6 +6,7 @@ import { requireRole } from '@/middleware/roleGuard';
 import {
   createUser,
   listUsers,
+  listManagers,
   updateUser,
   deactivateUser,
   activateUser,
@@ -39,6 +40,15 @@ const listQuerySchema = z.object({
   role:     z.enum(USER_ROLES).optional(),
   isActive: z.enum(['true', 'false']).optional(),
   search:   z.string().optional(),
+});
+
+router.get('/managers', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const managers = await listManagers();
+    res.status(200).json(managers);
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {

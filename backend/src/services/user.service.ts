@@ -101,3 +101,14 @@ export async function activateUser(id: string): Promise<SafeUser> {
   });
   return omitHash(user);
 }
+
+export async function listManagers(): Promise<SafeUser[]> {
+  const users = await prisma.user.findMany({
+    where: {
+      status: UserStatus.ACTIVE,
+      role: { in: [UserRole.TEAM_LEAD, UserRole.ADMIN] },
+    },
+    orderBy: { fullName: 'asc' },
+  });
+  return users.map(omitHash);
+}

@@ -4,8 +4,9 @@ import { useAllClients, useCreateClient, useUpdateClient } from '../../../servic
 import type { Client } from '../../../types/entities';
 import ProjectsSection from './ProjectsSection';
 
-interface NameForm {
+interface ClientForm {
   name: string;
+  description: string;
 }
 
 function CreateClientForm({ onClose }: { onClose: () => void }) {
@@ -14,18 +15,16 @@ function CreateClientForm({ onClose }: { onClose: () => void }) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<NameForm>();
+  } = useForm<ClientForm>();
   const createClient = useCreateClient();
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        createClient.mutate(data, {
-          onSuccess: () => {
-            reset();
-            onClose();
-          },
-        });
+        createClient.mutate(
+          { name: data.name, description: data.description || undefined },
+          { onSuccess: () => { reset(); onClose(); } },
+        );
       })}
       className="mt-3 flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4"
     >
@@ -35,6 +34,12 @@ function CreateClientForm({ onClose }: { onClose: () => void }) {
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
       <div className="flex gap-2">
         <button
           type="submit"
@@ -60,13 +65,18 @@ function EditClientForm({ client, onClose }: { client: Client; onClose: () => vo
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<NameForm>({ defaultValues: { name: client.name } });
+  } = useForm<ClientForm>({
+    defaultValues: { name: client.name, description: client.description ?? '' },
+  });
   const updateClient = useUpdateClient();
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        updateClient.mutate({ id: client.id, name: data.name }, { onSuccess: onClose });
+        updateClient.mutate(
+          { id: client.id, name: data.name, description: data.description || undefined },
+          { onSuccess: onClose },
+        );
       })}
       className="flex flex-col gap-2"
     >
@@ -75,6 +85,12 @@ function EditClientForm({ client, onClose }: { client: Client; onClose: () => vo
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
       <div className="flex gap-2">
         <button
           type="submit"
@@ -120,7 +136,12 @@ function ClientAccordion({ client }: { client: Client }) {
           className="flex flex-1 items-center gap-3 text-start"
         >
           <span className="text-xs text-gray-400">{isExpanded ? '▲' : '▼'}</span>
-          <span className="font-medium">{client.name}</span>
+          <div className="flex flex-col items-start">
+            <span className="font-medium">{client.name}</span>
+            {client.description && (
+              <span className="text-xs text-gray-500">{client.description}</span>
+            )}
+          </div>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
               isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'

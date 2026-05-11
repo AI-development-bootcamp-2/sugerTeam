@@ -20,6 +20,10 @@ const mockProject = {
   id: 'test-project-id',
   clientId: 'test-client-id',
   name: 'Test Project',
+  description: null,
+  startDate: null,
+  endDate: null,
+  primaryManagerId: null,
   status: 'ACTIVE',
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -30,6 +34,9 @@ const mockTask = {
   id: 'test-task-id',
   projectId: 'test-project-id',
   name: 'Test Task',
+  description: null,
+  startDate: null,
+  endDate: null,
   status: TaskStatus.OPEN,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -52,11 +59,11 @@ describe('createTask', () => {
       where: { id: 'test-project-id' },
     });
     expect(prisma.task.create).toHaveBeenCalledWith({
-      data: {
+      data: expect.objectContaining({
         projectId: 'test-project-id',
         name: 'Test Task',
         status: TaskStatus.OPEN,
-      },
+      }),
     });
     expect(result).toEqual(mockTask);
   });

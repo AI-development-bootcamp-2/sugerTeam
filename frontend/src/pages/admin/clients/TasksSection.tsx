@@ -10,8 +10,11 @@ interface TasksSectionProps {
   projectId: string;
 }
 
-interface NameForm {
+interface TaskForm {
   name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface ActiveTask {
@@ -24,22 +27,65 @@ function EditTaskForm({ task, onClose }: { task: ActiveTask; onClose: () => void
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<NameForm>({ defaultValues: { name: task.name } });
+  } = useForm<TaskForm>({ defaultValues: { name: task.name } });
   const updateTask = useUpdateTask();
+  const startDate = watch('startDate');
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        updateTask.mutate({ id: task.id, name: data.name }, { onSuccess: onClose });
+        updateTask.mutate(
+          {
+            id: task.id,
+            name: data.name,
+            description: data.description || undefined,
+            startDate: data.startDate || null,
+            endDate: data.endDate || null,
+          },
+          { onSuccess: onClose },
+        );
       })}
       className="flex flex-col gap-2"
     >
       <input
         {...register('name', { required: 'שדה חובה' })}
+        placeholder="שם משימה"
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך התחלה</label>
+          <input
+            type="date"
+            {...register('startDate')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך סיום</label>
+          <input
+            type="date"
+            {...register('endDate', {
+              validate: (val) =>
+                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+            })}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
+        </div>
+      </div>
+
       <div className="flex gap-2">
         <button
           type="submit"
@@ -103,21 +149,24 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<NameForm>();
+  } = useForm<TaskForm>();
   const createTask = useCreateTask();
+  const startDate = watch('startDate');
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
         createTask.mutate(
-          { projectId, name: data.name },
           {
-            onSuccess: () => {
-              reset();
-              onClose();
-            },
+            projectId,
+            name: data.name,
+            description: data.description || undefined,
+            startDate: data.startDate || undefined,
+            endDate: data.endDate || undefined,
           },
+          { onSuccess: () => { reset(); onClose(); } },
         );
       })}
       className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
@@ -128,6 +177,37 @@ function CreateTaskForm({ projectId, onClose }: { projectId: string; onClose: ()
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך התחלה</label>
+          <input
+            type="date"
+            {...register('startDate')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך סיום</label>
+          <input
+            type="date"
+            {...register('endDate', {
+              validate: (val) =>
+                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+            })}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
+        </div>
+      </div>
+
       <div className="flex gap-2">
         <button
           type="submit"

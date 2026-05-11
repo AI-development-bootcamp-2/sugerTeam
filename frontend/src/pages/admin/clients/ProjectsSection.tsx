@@ -4,6 +4,7 @@ import {
   useActiveProjects,
   useCreateProject,
   useUpdateProject,
+  useManagers,
 } from '../../../services/entities.service';
 import TasksSection from './TasksSection';
 
@@ -11,8 +12,12 @@ interface ProjectsSectionProps {
   clientId: string;
 }
 
-interface NameForm {
+interface ProjectForm {
   name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  primaryManagerId: string;
 }
 
 interface ActiveProject {
@@ -25,22 +30,82 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<NameForm>({ defaultValues: { name: project.name } });
+  } = useForm<ProjectForm>({ defaultValues: { name: project.name } });
   const updateProject = useUpdateProject();
+  const { data: managers } = useManagers();
+  const startDate = watch('startDate');
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        updateProject.mutate({ id: project.id, name: data.name }, { onSuccess: onClose });
+        updateProject.mutate(
+          {
+            id: project.id,
+            name: data.name,
+            description: data.description || undefined,
+            startDate: data.startDate || null,
+            endDate: data.endDate || null,
+            primaryManagerId: data.primaryManagerId || null,
+          },
+          { onSuccess: onClose },
+        );
       })}
       className="flex flex-col gap-2"
     >
       <input
         {...register('name', { required: 'שדה חובה' })}
+        placeholder="שם פרויקט"
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך התחלה</label>
+          <input
+            type="date"
+            {...register('startDate')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך סיום</label>
+          <input
+            type="date"
+            {...register('endDate', {
+              validate: (val) =>
+                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+            })}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
+        <select
+          {...register('primaryManagerId')}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- ללא מנהל --</option>
+          {managers?.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.fullName}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex gap-2">
         <button
           type="submit"
@@ -114,21 +179,26 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
-  } = useForm<NameForm>();
+  } = useForm<ProjectForm>();
   const createProject = useCreateProject();
+  const { data: managers } = useManagers();
+  const startDate = watch('startDate');
 
   return (
     <form
       onSubmit={handleSubmit((data) => {
         createProject.mutate(
-          { clientId, name: data.name },
           {
-            onSuccess: () => {
-              reset();
-              onClose();
-            },
+            clientId,
+            name: data.name,
+            description: data.description || undefined,
+            startDate: data.startDate || undefined,
+            endDate: data.endDate || undefined,
+            primaryManagerId: data.primaryManagerId || undefined,
           },
+          { onSuccess: () => { reset(); onClose(); } },
         );
       })}
       className="flex flex-col gap-2 rounded-md border border-gray-200 bg-white p-3"
@@ -139,6 +209,52 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+
+      <textarea
+        {...register('description')}
+        placeholder="תיאור (אופציונלי)"
+        rows={2}
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך התחלה</label>
+          <input
+            type="date"
+            {...register('startDate')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="mb-1 block text-xs font-medium text-gray-600">תאריך סיום</label>
+          <input
+            type="date"
+            {...register('endDate', {
+              validate: (val) =>
+                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+            })}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">שיוך מנהל ראשי</label>
+        <select
+          {...register('primaryManagerId')}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- ללא מנהל --</option>
+          {managers?.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.fullName}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex gap-2">
         <button
           type="submit"

@@ -18,18 +18,31 @@ const activeQuerySchema = z.object({
   clientId: z.string().uuid(),
 });
 
+const dateRefinement = (data: { startDate?: Date | null; endDate?: Date | null }) => {
+  if (data.startDate && data.endDate && data.endDate < data.startDate) return false;
+  return true;
+};
+
 const createProjectSchema = z.object({
-  clientId: z.string().uuid(),
-  name:     z.string().min(1),
-});
+  clientId:         z.string().uuid(),
+  name:             z.string().min(1),
+  description:      z.string().optional(),
+  startDate:        z.coerce.date().optional(),
+  endDate:          z.coerce.date().optional(),
+  primaryManagerId: z.string().uuid().optional(),
+}).refine(dateRefinement, { message: 'endDate must be on or after startDate', path: ['endDate'] });
 
 const updateProjectSchema = z.object({
-  name:     z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
+  name:             z.string().min(1).optional(),
+  description:      z.string().optional(),
+  startDate:        z.coerce.date().nullable().optional(),
+  endDate:          z.coerce.date().nullable().optional(),
+  primaryManagerId: z.string().uuid().nullable().optional(),
+  isActive:         z.boolean().optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },
-);
+).refine(dateRefinement, { message: 'endDate must be on or after startDate', path: ['endDate'] });
 
 router.get('/active', async (req: Request, res: Response, next: NextFunction) => {
   const result = activeQuerySchema.safeParse(req.query);
@@ -77,6 +90,10 @@ router.patch('/:id', requireRole(UserRole.ADMIN), async (req: Request, res: Resp
     const project = await updateProject(id, result.data);
     res.status(200).json(project);
   } catch (err) {
+    if (err instanceof NotFoundError) {
+      res.status(404).json({ error: err.message });
+      return;
+    }
     if ((err as { code?: string }).code === 'P2025') {
       res.status(404).json({ error: 'Project not found' });
       return;
