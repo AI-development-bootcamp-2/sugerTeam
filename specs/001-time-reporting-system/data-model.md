@@ -51,6 +51,7 @@ The system account of an employee, team lead, or admin.
 | fullName | String | NOT NULL | Display name |
 | email | String | UNIQUE, NOT NULL | Login credential |
 | passwordHash | String | NOT NULL | bcrypt hash; never returned in API responses |
+| passwordChangedAt | DateTime | nullable | Last password change timestamp; used for 30-day expiry |
 | role | Enum | NOT NULL | Values: `EMPLOYEE`, `TEAM_LEAD`, `ADMIN` |
 | status | Enum | NOT NULL, default ACTIVE | Values: `ACTIVE`, `INACTIVE` |
 | createdAt | DateTime | NOT NULL, default now() | |

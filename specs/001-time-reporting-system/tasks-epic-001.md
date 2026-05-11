@@ -43,13 +43,21 @@
 
 ## Phase 3: Auth API (User Story: US6)
 
-- [ ] T012 [US6] Implement AuthService: login(email, password) — find active user by email (401 if not found or status INACTIVE), bcrypt.compare password (401 if mismatch), sign JWT access token (HS256, 2h, payload {sub: userId, role}), sign refresh token (HS256, 30d), return { accessToken, user: {id, fullName, role} }; refreshTokens(refreshToken) — verify refresh JWT, return new token pair; logout() — no server state needed (cookie cleared by route): backend/src/services/auth.service.ts
-- [ ] T013 [US6] Implement POST /auth/login (body: {email, password} Zod-validated, sets refreshToken httpOnly sameSite=strict cookie, returns accessToken + user), POST /auth/refresh (reads refreshToken cookie, returns new accessToken + user, sets new cookie), POST /auth/logout (clears refreshToken cookie, returns 204) routes: backend/src/routes/auth.ts
-- [ ] T014 [US6] Implement authenticateToken middleware: extract Bearer token from Authorization header, verify JWT, attach decoded {userId, role} to req.user; return 401 JSON if missing or expired; implement requireRole(...roles: UserRole[]) factory returning middleware that checks req.user.role and returns 403 if not in allowed list: backend/src/middleware/auth.ts, backend/src/middleware/roleGuard.ts
+- [X] T012 [US6] Implement AuthService: login(email, password) — find active user by email (401 if not found or status INACTIVE), bcrypt.compare password (401 if mismatch), sign JWT access token (HS256, 2h, payload {sub: userId, role}), sign refresh token (HS256, 30d), return { accessToken, user: {id, fullName, role} }; refreshTokens(refreshToken) — verify refresh JWT, return new token pair; logout() — no server state needed (cookie cleared by route): backend/src/services/auth.service.ts
+- [X] T013 [US6] Implement POST /auth/login (body: {email, password} Zod-validated, sets refreshToken httpOnly sameSite=strict cookie, returns accessToken + user), POST /auth/refresh (reads refreshToken cookie, returns new accessToken + user, sets new cookie), POST /auth/logout (clears refreshToken cookie, returns 204) routes: backend/src/routes/auth.ts
+- [X] T014 [US6] Implement authenticateToken middleware: extract Bearer token from Authorization header, verify JWT, attach decoded {userId, role} to req.user; return 401 JSON if missing or expired; implement requireRole(...roles: UserRole[]) factory returning middleware that checks req.user.role and returns 403 if not in allowed list: backend/src/middleware/auth.ts, backend/src/middleware/roleGuard.ts
 - [ ] T015 [US6] Implement checkMonthLock middleware factory: extract year+month from req.body.date or req.params (yyyy-mm format); query MonthLock table with prisma client; if isLocked true and req.user.role !== ADMIN, return 423 JSON { error: "החודש נעול, לא ניתן לבצע שינויים" }: backend/src/middleware/monthLock.ts
-- [ ] T016 [US6] Register all route files on Express app under /api/v1 prefix (app.use('/api/v1/auth', authRouter)); add 404 handler (unknown route → 404 JSON) and global error handler middleware (logs error, returns 500 JSON); export app from app.ts: backend/src/app.ts (extend)
+- [X] T016 [US6] Register all route files on Express app under /api/v1 prefix (app.use('/api/v1/auth', authRouter)); add 404 handler (unknown route → 404 JSON) and global error handler middleware (logs error, returns 500 JSON); export app from app.ts: backend/src/app.ts (extend)
 
 **Checkpoint**: POST /auth/login valid → 200 + accessToken + httpOnly cookie; invalid password → 401; inactive user → 401; POST /auth/refresh → 200 new token pair + new cookie; POST /auth/logout → 204 cookie cleared
+
+---
+
+## Maintenance & Testing (Completed 2026-05-11)
+
+- [X] Synchronize database schema with Prisma (added `passwordChangedAt` to `User` model).
+- [X] Refactor `user.service.test.ts` to use modern Jest 29 patterns (`jest.mocked()`).
+- [X] Verify all backend tests pass (33 tests total).
 
 ---
 

@@ -16,6 +16,9 @@ jest.mock('../prisma/client', () => ({
       create: jest.fn(),
       findMany: jest.fn(),
       update: jest.fn(),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
   },
 }));
@@ -41,8 +44,8 @@ beforeEach(() => {
 
 describe('createUser', () => {
   it('calls bcrypt.hash with cost 12 and returns no passwordHash', async () => {
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-    (prisma.user.create as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed' as never);
+    jest.mocked(prisma.user.create).mockResolvedValue(mockDbUser);
 
     const result = await createUser({
       fullName: 'Test User',
@@ -56,8 +59,8 @@ describe('createUser', () => {
   });
 
   it('normalises email to lowercase + trim before creating', async () => {
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-    (prisma.user.create as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed' as never);
+    jest.mocked(prisma.user.create).mockResolvedValue(mockDbUser);
 
     await createUser({
       fullName: 'Test',
@@ -74,8 +77,8 @@ describe('createUser', () => {
   });
 
   it('sets passwordChangedAt to a Date instance, not null', async () => {
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
-    (prisma.user.create as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed' as never);
+    jest.mocked(prisma.user.create).mockResolvedValue(mockDbUser);
 
     await createUser({
       fullName: 'Test',
@@ -84,14 +87,14 @@ describe('createUser', () => {
       role: UserRole.EMPLOYEE,
     });
 
-    const call = (prisma.user.create as jest.Mock).mock.calls[0][0];
+    const call = jest.mocked(prisma.user.create).mock.calls[0][0];
     expect(call.data.passwordChangedAt).toBeInstanceOf(Date);
   });
 
   it('throws ConflictError on P2002', async () => {
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed');
+    jest.mocked(bcrypt.hash).mockResolvedValue('hashed' as never);
     const err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
-    (prisma.user.create as jest.Mock).mockRejectedValue(err);
+    jest.mocked(prisma.user.create).mockRejectedValue(err);
 
     await expect(
       createUser({ fullName: 'Test', email: 'test@example.com', password: 'pass', role: UserRole.EMPLOYEE }),
@@ -101,7 +104,7 @@ describe('createUser', () => {
 
 describe('listUsers', () => {
   it('calls findMany with empty where when no filters provided', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([]);
 
     await listUsers({});
 
@@ -109,7 +112,7 @@ describe('listUsers', () => {
   });
 
   it('applies role filter', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([]);
 
     await listUsers({ role: UserRole.ADMIN });
 
@@ -119,7 +122,7 @@ describe('listUsers', () => {
   });
 
   it('isActive=true maps to status ACTIVE', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([]);
 
     await listUsers({ isActive: true });
 
@@ -129,7 +132,7 @@ describe('listUsers', () => {
   });
 
   it('isActive=false maps to status INACTIVE', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([]);
 
     await listUsers({ isActive: false });
 
@@ -139,12 +142,12 @@ describe('listUsers', () => {
   });
 
   it('search adds OR with mode insensitive on fullName and email', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([]);
 
     await listUsers({ search: 'alice' });
 
-    const call = (prisma.user.findMany as jest.Mock).mock.calls[0][0];
-    expect(call.where.OR).toEqual(
+    const call = jest.mocked(prisma.user.findMany).mock.calls[0][0];
+    expect(call?.where?.OR).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ fullName: expect.objectContaining({ mode: 'insensitive' }) }),
         expect.objectContaining({ email: expect.objectContaining({ mode: 'insensitive' }) }),
@@ -153,7 +156,7 @@ describe('listUsers', () => {
   });
 
   it('strips passwordHash from every result', async () => {
-    (prisma.user.findMany as jest.Mock).mockResolvedValue([mockDbUser, mockDbUser]);
+    jest.mocked(prisma.user.findMany).mockResolvedValue([mockDbUser, mockDbUser]);
 
     const results = await listUsers({});
 
@@ -165,7 +168,7 @@ describe('listUsers', () => {
 
 describe('updateUser', () => {
   it('passes only provided fields to prisma and returns no passwordHash', async () => {
-    (prisma.user.update as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(prisma.user.update).mockResolvedValue(mockDbUser);
 
     const result = await updateUser('test-id', { fullName: 'New Name' });
 
@@ -176,7 +179,7 @@ describe('updateUser', () => {
   });
 
   it('normalises email to lowercase + trim before updating', async () => {
-    (prisma.user.update as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(prisma.user.update).mockResolvedValue(mockDbUser);
 
     await updateUser('test-id', { email: ' UPPER@EXAMPLE.COM ' });
 
@@ -189,14 +192,14 @@ describe('updateUser', () => {
 
   it('throws ConflictError on P2002', async () => {
     const err = Object.assign(new Error('Unique'), { code: 'P2002' });
-    (prisma.user.update as jest.Mock).mockRejectedValue(err);
+    jest.mocked(prisma.user.update).mockRejectedValue(err);
 
     await expect(updateUser('id', { fullName: 'X' })).rejects.toThrow(ConflictError);
   });
 
   it('propagates P2025 without converting to ConflictError', async () => {
     const err = Object.assign(new Error('Not found'), { code: 'P2025' });
-    (prisma.user.update as jest.Mock).mockRejectedValue(err);
+    jest.mocked(prisma.user.update).mockRejectedValue(err);
 
     await expect(updateUser('id', { fullName: 'X' })).rejects.not.toThrow(ConflictError);
     await expect(updateUser('id', { fullName: 'X' })).rejects.toMatchObject({ code: 'P2025' });
@@ -205,7 +208,7 @@ describe('updateUser', () => {
 
 describe('deactivateUser', () => {
   it('calls prisma with status INACTIVE and deletedAt as a Date', async () => {
-    (prisma.user.update as jest.Mock).mockResolvedValue({
+    jest.mocked(prisma.user.update).mockResolvedValue({
       ...mockDbUser,
       status: UserStatus.INACTIVE,
       deletedAt: new Date(),
@@ -226,7 +229,7 @@ describe('deactivateUser', () => {
 
 describe('activateUser', () => {
   it('calls prisma with status ACTIVE and deletedAt null', async () => {
-    (prisma.user.update as jest.Mock).mockResolvedValue(mockDbUser);
+    jest.mocked(prisma.user.update).mockResolvedValue(mockDbUser);
 
     await activateUser('test-id');
 
