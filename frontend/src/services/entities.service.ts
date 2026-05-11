@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './api';
-import type { Client, Project } from '../types/entities';
+import type { Client, Project, Task } from '../types/entities';
 
 export function useActiveClients() {
   return useQuery({
@@ -84,6 +84,46 @@ export function useUpdateProject() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+export function useActiveTasks(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ['tasks', 'active', projectId],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ id: string; name: string; projectId: string }[]>(
+        '/api/v1/tasks/active',
+        { params: { projectId } },
+      );
+      return data;
+    },
+    enabled: projectId !== undefined,
+  });
+}
+
+export function useCreateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { projectId: string; name: string }) => {
+      const { data } = await apiClient.post<Task>('/api/v1/tasks', payload);
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['tasks', 'active', variables.projectId] });
+    },
+  });
+}
+
+export function useUpdateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean }) => {
+      const { data } = await apiClient.patch<Task>(`/api/v1/tasks/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }
