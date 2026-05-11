@@ -74,6 +74,14 @@ Soft-deactivate. Sets `isActive = false`. **Response 200**.
 ### PATCH /users/:id/activate *(Admin)*
 Re-activate user. **Response 200**.
 
+### GET /users/managers *(Admin)*
+Active users eligible as primary project manager (role TEAM_LEAD or ADMIN, status ACTIVE).
+
+**Response 200**
+```json
+[{ "id": "uuid", "fullName": "Dana Levi", "role": "TEAM_LEAD" }]
+```
+
 ---
 
 ## Clients — `/clients`
@@ -89,15 +97,15 @@ All clients including inactive.
 
 ### POST /clients *(Admin)*
 ```json
-{ "name": "New Client" }
+{ "name": "New Client", "description": "Optional notes" }
 ```
-**Response 201**
+`description` is optional, max 500 chars. **Response 201** — full client object.
 
 ### PATCH /clients/:id *(Admin)*
 ```json
-{ "name": "Renamed", "isActive": false }
+{ "name": "Renamed", "description": "Updated notes", "isActive": false }
 ```
-**Response 200**
+All fields optional. **Response 200** — updated client object.
 
 ---
 
@@ -106,16 +114,34 @@ All clients including inactive.
 ### GET /projects/active?clientId=
 Active projects for a client (cascading dropdown).
 
+### GET /projects *(Admin)*
+All projects including inactive.
+
 ### POST /projects *(Admin)*
 ```json
-{ "clientId": "uuid", "name": "Website Redesign" }
+{
+  "clientId": "uuid",
+  "name": "Website Redesign",
+  "description": "Optional project notes",
+  "primaryManagerId": "uuid",
+  "startDate": "2026-06-01",
+  "endDate": "2026-12-31"
+}
 ```
-**Response 201**
+`description`, `primaryManagerId`, `startDate`, `endDate` are all optional. `endDate` must be ≥ `startDate` if both provided (FR-044). **Response 201** — full project object including `primaryManager: { id, fullName, role }`.
 
 ### PATCH /projects/:id *(Admin)*
 ```json
-{ "name": "Updated", "isActive": false }
+{
+  "name": "Updated",
+  "description": "Updated notes",
+  "primaryManagerId": "uuid",
+  "startDate": "2026-06-01",
+  "endDate": "2026-12-31",
+  "isActive": false
+}
 ```
+All fields optional. **Errors**: `400` endDate < startDate | `404` primaryManagerId not found or not a manager.
 
 ---
 
@@ -135,14 +161,27 @@ Active tasks for a project.
 
 ### POST /tasks *(Admin)*
 ```json
-{ "projectId": "uuid", "name": "Backend API" }
+{
+  "projectId": "uuid",
+  "name": "Backend API",
+  "description": "Optional task notes",
+  "startDate": "2026-06-01",
+  "endDate": "2026-09-30"
+}
 ```
-**Response 201**
+`description`, `startDate`, `endDate` are optional. `endDate` must be ≥ `startDate` if both provided (FR-044). **Response 201** — full task object.
 
 ### PATCH /tasks/:id *(Admin)*
 ```json
-{ "name": "Updated", "isActive": false }
+{
+  "name": "Updated",
+  "description": "Updated notes",
+  "startDate": "2026-06-01",
+  "endDate": "2026-09-30",
+  "isActive": false
+}
 ```
+All fields optional. **Errors**: `400` endDate < startDate.
 
 ---
 

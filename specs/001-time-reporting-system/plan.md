@@ -159,8 +159,10 @@ Shared TypeScript types may be extracted to a `shared/` package in v1 if time pe
 | US-006 | Client/Project/Task CRUD API: REST endpoints for each; soft-delete; parent FK validation; `GET /clients/active` for dropdown | Dev 2 | 3 | Admin creates client→project→task chain; inactive client absent from dropdown endpoint |
 | US-007 | Admin Users UI (Hebrew RTL): list, create, edit, deactivate; role selector; success/error feedback | Dev 4 | 2 | Admin creates user with role via UI; deactivated user no longer visible in active list |
 | US-008 | Admin Clients/Projects/Tasks UI: hierarchical create/edit/deactivate; cascade visual hints | Dev 4 | 2 | Admin creates full client→project→task chain via UI |
+| US-025 | Admin Entity Form Fields — backend: extend Prisma schema (description, startDate, endDate on Client/Project/Task; primaryManagerId FK on Project); update Zod schemas in clients/projects/tasks routes; add `GET /users/managers` (admin-only) | Dev 2 | 2 | New nullable columns migrate cleanly; POST/PATCH with new fields persist correctly; endDate < startDate returns 400; managers endpoint returns only active TEAM_LEAD/ADMIN users |
+| US-026 | Admin Entity Form Fields — frontend: extend Client/Project/Task TypeScript interfaces; add `useManagers` query hook; update ClientsPage (description), ProjectsPage (description, client dropdown, manager dropdown "שיוך מנהל ראשי", startDate/endDate), TasksPage (description, project dropdown "שיוך לפרויקט קיים", startDate/endDate); cross-field date validation in RHF | Dev 4 | 2 | All new fields render and save via UI; endDate < startDate shows inline validation error |
 
-**EPIC-002 Sprint 1 total**: 9 pts
+**EPIC-002 Sprint 1 total**: 13 pts
 
 ---
 

@@ -71,7 +71,8 @@ An organization or company for which employees report work.
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | UUID | PK | |
-| name | String | NOT NULL | Display name |
+| name | String | NOT NULL, max 255 | Display name |
+| description | String | nullable, max 500 | Optional notes about the client |
 | status | Enum | NOT NULL, default ACTIVE | Values: `ACTIVE`, `INACTIVE` |
 | createdAt | DateTime | NOT NULL | |
 | updatedAt | DateTime | NOT NULL | |
@@ -90,13 +91,17 @@ A named initiative under a client.
 |-------|------|-------------|-------|
 | id | UUID | PK | |
 | clientId | UUID | FK → Client, NOT NULL | |
-| name | String | NOT NULL | |
+| name | String | NOT NULL, max 255 | |
+| description | String | nullable, max 500 | Optional project notes |
+| primaryManagerId | UUID | FK → User, nullable | Active TEAM_LEAD or ADMIN user; "שיוך מנהל ראשי" |
+| startDate | Date | nullable | Planned project start |
+| endDate | Date | nullable | Planned project end; MUST be ≥ startDate if both set |
 | status | Enum | NOT NULL, default ACTIVE | Values: `ACTIVE`, `INACTIVE` |
 | createdAt | DateTime | NOT NULL | |
 | updatedAt | DateTime | NOT NULL | |
 | deletedAt | DateTime | nullable | |
 
-**Rules**: A project is accessible in new reports only if both the project and its client are active.
+**Rules**: A project is accessible in new reports only if both the project and its client are active. Deactivating the `primaryManagerId` user does not affect project status (FR-047).
 
 ---
 
@@ -107,12 +112,16 @@ A specific unit of work within a project that employees can report time against.
 | Field | Type | Constraints | Notes |
 |-------|------|-------------|-------|
 | id | UUID | PK | |
-| projectId | UUID | FK → Project, NOT NULL | |
-| name | String | NOT NULL | Task name or description |
+| projectId | UUID | FK → Project, NOT NULL | "שיוך לפרויקט קיים" — dropdown of active projects |
+| name | String | NOT NULL, max 255 | Task name |
+| description | String | nullable, max 500 | Optional task notes |
+| startDate | Date | nullable | Planned task start |
+| endDate | Date | nullable | Planned task end; MUST be ≥ startDate if both set |
 | status | Enum | NOT NULL, default OPEN | Values: `OPEN`, `CLOSED` |
 | createdAt | DateTime | NOT NULL | |
 | updatedAt | DateTime | NOT NULL | |
 | closedAt | DateTime | nullable | Set when status → CLOSED |
+| deletedAt | DateTime | nullable | Soft delete |
 
 **Rules**: Only `OPEN` tasks that are assigned to the user appear in report form dropdowns.
 

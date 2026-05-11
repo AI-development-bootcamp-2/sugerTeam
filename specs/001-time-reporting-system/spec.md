@@ -317,6 +317,15 @@ can now edit the same report.
 - **FR-034**: Admins and team leads MUST be able to assign employees to tasks. Assignment controls which tasks appear in the employee's report form.
 - **FR-035**: Admins MUST be able to view and edit any employee's reports. Every admin edit MUST be recorded in an audit log with: report ID, editor ID, employee ID, timestamp, previous values, new values.
 
+**Admin — Entity Form Fields**
+
+- **FR-042**: The Client create and edit form MUST include: `name` (required, max 255 chars), `description` (optional, max 500 chars).
+- **FR-043**: The Project create and edit form MUST include: `name` (required, max 255 chars), `description` (optional, max 500 chars), `clientId` (required, dropdown of active clients), `primaryManagerId` (optional, dropdown labeled "שיוך מנהל ראשי" listing active users with role TEAM_LEAD or ADMIN), `startDate` (optional, date), `endDate` (optional, date).
+- **FR-044**: When both `startDate` and `endDate` are provided on a Project or Task, `endDate` MUST NOT be earlier than `startDate`; the system MUST reject the form submission with a validation error.
+- **FR-045**: The Task create and edit form MUST include: `name` (required, max 255 chars), `projectId` (required, dropdown labeled "שיוך לפרויקט קיים" listing active projects), `description` (optional, max 500 chars), `startDate` (optional, date), `endDate` (optional, date).
+- **FR-046**: A dedicated API endpoint MUST return the list of active managers (users with role TEAM_LEAD or ADMIN and status ACTIVE) for use in the project primary-manager dropdown.
+- **FR-047**: Deactivating a user who is set as `primaryManagerId` on one or more projects MUST NOT cascade-deactivate those projects; the reference is preserved but excluded from the managers dropdown.
+
 **Month Closure**
 
 - **FR-036**: Admins MUST be able to lock a specific month, making all reports for that month read-only for non-admin roles.
@@ -332,9 +341,9 @@ can now edit the same report.
 ### Key Entities
 
 - **User**: A person who can log in. Has a role (Employee, Team Lead, Admin) and an active/inactive status. Historical data is preserved on deactivation.
-- **Client**: An organization for which work is performed. Has active/inactive status; inactive clients are excluded from new-report dropdowns.
-- **Project**: Belongs to a client. Has active/inactive status. Contains tasks.
-- **Task**: Belongs to a project. Has open/closed status. The unit of work an employee reports time against.
+- **Client**: An organization for which work is performed. Fields: `name`, `description` (optional). Has active/inactive status; inactive clients are excluded from new-report dropdowns.
+- **Project**: Belongs to a client. Fields: `name`, `description` (optional), `clientId` (FK), `primaryManagerId` (optional FK to User with TEAM_LEAD/ADMIN role), `startDate` (optional), `endDate` (optional). Has active/inactive status.
+- **Task**: Belongs to a project. Fields: `name`, `description` (optional), `projectId` (FK), `startDate` (optional), `endDate` (optional). Has open/closed status. The unit of work an employee reports time against.
 - **TaskAssignment**: Links a user to a task, granting the user the ability to report time against it. Managed by team leads and admins.
 - **TimeReport**: A single work-hour record for a user covering a specific date and time range, linked to a task. Supports draft state.
 - **AbsenceReport**: A record of one or more absence days for a user. Linked to an absence type. Supports partial-day flag.
@@ -387,3 +396,11 @@ can now edit the same report.
 
 - Q: Should user email matching be case-insensitive? → A: Yes — normalize email to lowercase on every login lookup (RFC-compliant; prevents "account not found" errors from casing mismatches).
 - Q: Is HTTPS required in production? → A: Yes — production deployments must run behind HTTPS; the refresh token cookie carries the `secure` flag and must not be transmitted over plain HTTP.
+
+### Session 2026-05-11
+
+- Q: What fields should the admin forms for Client, Project, and Task include beyond `name`? → A:
+  - Client: `name` (required), `description` (optional).
+  - Project: `name` (required), `description` (optional), `clientId` (required — active clients dropdown), `primaryManagerId` (optional — "שיוך מנהל ראשי", active TEAM_LEAD/ADMIN users dropdown), `startDate` (optional), `endDate` (optional).
+  - Task: `name` (required), `projectId` (required — "שיוך לפרויקט קיים", active projects dropdown), `description` (optional), `startDate` (optional), `endDate` (optional).
+- Q: What defines a "manager" for the primary-manager dropdown? → A: Any active user with role TEAM_LEAD or ADMIN.

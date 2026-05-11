@@ -159,3 +159,57 @@ For each calendar day in the selected month:
 Every write endpoint for `TimeReport` and `AbsenceReport` MUST check `MonthLock` for the
 report's year-month before persisting. If `isLocked = true` and the requester is not an Admin,
 return HTTP 423 Locked with a clear message.
+
+---
+
+## Admin Entity Form Fields (added 2026-05-11)
+
+### Manager definition for "שיוך מנהל ראשי"
+
+**Decision**: A manager eligible for the `primaryManagerId` dropdown is any User with `role IN (TEAM_LEAD, ADMIN)` and `status = ACTIVE`.
+
+**Rationale**: Both roles carry supervisory responsibility. Filtering by ACTIVE prevents assigning inactive accounts. A dedicated "Manager" role is not warranted — the existing enum covers the needed semantics.
+
+**Alternatives considered**: Separate Manager role — rejected as over-engineering.
+
+---
+
+### Description field length
+
+**Decision**: `description` on Client, Project, and Task is `String?` (nullable) with a max of 500 chars enforced in Zod.
+
+**Rationale**: Consistent with the existing `TimeReportEntry.description` limit (`@db.VarChar(500)`).
+
+---
+
+### Date fields (startDate / endDate) on Project and Task
+
+**Decision**: Both are `DateTime? @db.Date` (nullable). Zod applies a `.refine()` cross-field check when both are present: `endDate >= startDate`. The same check runs in the React Hook Form resolver.
+
+**Rationale**: Making dates optional avoids a migration-time default problem and fits FR-043/FR-045. Cross-field validation at both API and form boundaries enforces FR-044.
+
+**Alternatives considered**: Required startDate — rejected; most tasks are created without planned timelines.
+
+---
+
+### primaryManagerId cascade behaviour
+
+**Decision**: No `onDelete` action on the `primaryManager` FK (Prisma default). Deactivating a manager user leaves their `primaryManagerId` references intact on existing projects but removes them from the managers dropdown (which filters by `status = ACTIVE`).
+
+**Rationale**: Matches FR-047. Cascading nullify would silently erase ownership history; keeping the reference preserves auditability.
+
+---
+
+### Managers API endpoint
+
+**Decision**: `GET /api/v1/users/managers` — a new route on the existing users router, admin-only. Returns `{ id, fullName, role }[]`.
+
+**Rationale**: A named endpoint is more explicit than extending `GET /api/v1/users` with a role filter query param. Reuses the existing users router and auth middleware.
+
+---
+
+### Active projects dropdown for tasks
+
+**Decision**: The "שיוך לפרויקט קיים" dropdown uses `GET /api/v1/projects` (existing endpoint), client-side filtered by `status === 'ACTIVE'`. No new endpoint needed.
+
+**Rationale**: The existing projects endpoint already carries status and is used elsewhere.

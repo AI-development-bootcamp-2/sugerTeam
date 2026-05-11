@@ -114,3 +114,68 @@ cd frontend && pnpm test
 | POST | `/months/:year/:month/lock` | Admin: lock reporting month |
 
 Full API reference: [contracts/api.md](contracts/api.md)
+
+---
+
+## Implementing Admin Entity Form Fields (FR-042 – FR-047)
+
+### Step 1 — Prisma schema migration
+
+Add nullable columns to `Client`, `Project`, and `Task` in `backend/prisma/schema.prisma`:
+
+```prisma
+model Client {
+  // existing fields...
+  description String?
+}
+
+model Project {
+  // existing fields...
+  description      String?
+  primaryManagerId String?
+  startDate        DateTime? @db.Date
+  endDate          DateTime? @db.Date
+
+  primaryManager User? @relation("ProjectManager", fields: [primaryManagerId], references: [id])
+}
+
+model Task {
+  // existing fields...
+  description String?
+  startDate   DateTime? @db.Date
+  endDate     DateTime? @db.Date
+}
+```
+
+Run migration:
+```bash
+cd backend
+pnpm prisma migrate dev --name add-admin-entity-fields
+```
+
+### Step 2 — Backend: Zod + services
+
+1. **`routes/clients.ts`** — add `description: z.string().max(500).optional()` to create/update schemas.
+2. **`routes/projects.ts`** — add `description`, `primaryManagerId` (UUID optional), `startDate`/`endDate` (date string optional), and a `.refine()` cross-check that `endDate >= startDate`.
+3. **`routes/tasks.ts`** — same date fields + description + `.refine()` check.
+4. **`routes/users.ts`** — add `GET /managers`: query `{ role: { in: ['TEAM_LEAD','ADMIN'] }, status: 'ACTIVE' }`, return `{ id, fullName, role }[]`. Gate with admin middleware.
+5. **`services/project.service.ts`** — include `primaryManager: { select: { id, fullName, role } }` in read queries.
+
+### Step 3 — Frontend: types and services
+
+1. **`types/entities.ts`** — extend `Client`, `Project`, `Task` interfaces with the new optional fields.
+2. **`services/entities.service.ts`** — add `useManagers()` query hook: `GET /api/v1/users/managers`.
+
+### Step 4 — Frontend: admin form components
+
+1. **`ClientsPage.tsx`** — add a `<textarea>` / `<input>` for `description` to create and edit forms.
+2. **`ProjectsPage.tsx`** — add: client dropdown (already has `clientId`), manager dropdown (from `useManagers()`), description textarea, startDate/endDate date inputs. Add `endDate >= startDate` validation in the RHF resolver.
+3. **`TasksPage.tsx`** — add: project dropdown (already has `projectId`, label "שיוך לפרויקט קיים"), description textarea, startDate/endDate date inputs with the same cross-field validation.
+
+### Step 5 — Tests
+
+Add/update test cases in `backend/src/__tests__/`:
+- `clients.test.ts` — test create/update with and without description.
+- `projects.test.ts` — test create with primaryManagerId (valid manager, non-manager, inactive user), endDate < startDate rejection.
+- `tasks.test.ts` — test endDate < startDate rejection, description truncation.
+- `users.test.ts` — test GET /managers returns only TEAM_LEAD/ADMIN with ACTIVE status.
