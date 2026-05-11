@@ -166,8 +166,6 @@ model DailyReport {
   user    User              @relation(fields: [userId], references: [id])
   entries TimeReportEntry[]
 
-  // Partial unique (userId, reportDate) WHERE deletedAt IS NULL is added
-  // as raw SQL in the migration — Prisma DSL cannot express the WHERE clause.
   @@index([userId, reportDate])
 }
 

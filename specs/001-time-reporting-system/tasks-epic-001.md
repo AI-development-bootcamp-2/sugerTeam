@@ -53,6 +53,14 @@
 
 ---
 
+## Maintenance & Testing (Completed 2026-05-11)
+
+- [X] Synchronize database schema with Prisma (added `passwordChangedAt` to `User` model).
+- [X] Refactor `user.service.test.ts` to use modern Jest 29 patterns (`jest.mocked()`).
+- [X] Verify all backend tests pass (33 tests total).
+
+---
+
 ## Phase 4: Auth UI (User Story: US6)
 
 - [X] T017 [US6] Implement Zustand auth store: state { user: User | null, accessToken: string | null }; actions setAuth(user, token), clearAuth(); store does NOT persist to localStorage (token in memory only for XSS protection): frontend/src/store/authStore.ts
