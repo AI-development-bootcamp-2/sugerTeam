@@ -1,6 +1,7 @@
 # Tasks: EPIC-003 — Task Assignment
 
 **Sprint**: 1 | **Days**: 2 | **Spec Priority**: P5 | **User Story**: US5
+**Platform**: 🟠 Admin Platform — assignment management UI lives in `frontend-admin/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth middleware), EPIC-002 (users, tasks, and clients/projects must exist in DB)
 **Blocks**: EPIC-004 (employees need assigned tasks before they can submit reports)

@@ -7,6 +7,24 @@
 
 ---
 
+## System Overview
+
+The system is composed of **two separate frontend platforms** that share a single backend API and a single PostgreSQL database:
+
+| Platform | Audience | URL (example) | Description |
+|----------|----------|---------------|-------------|
+| **Time Management Platform** | Employees, Team Leads, and Admins | `app.company.com` | Daily work reporting, absence reporting, monthly calendar view, timer |
+| **Admin Platform** | Admins only | `admin.company.com` | Entity management (users, clients, projects, tasks), task assignments, month closure, audit log |
+
+**Key architectural facts:**
+
+- Both platforms are served as separate React SPAs and connect to the same Express REST API.
+- Both platforms read from and write to the **same PostgreSQL database**; there is no data duplication or separate storage.
+- Both platforms use the **same login page** (identical Hebrew RTL design, same `/auth/login` endpoint). After authentication the user is redirected to the interface appropriate for their role.
+- Role-based access is enforced server-side on every API route; a user who lands on the wrong platform is denied at the API level regardless of the frontend they reach.
+
+---
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Employee Submits Daily Work Report (Priority: P1)
@@ -257,6 +275,7 @@ can now edit the same report.
   proceeds regardless — it is an admin decision, not automatically blocked.)
 - What happens when an employee has no assigned tasks? (Report form shows empty dropdowns and
   prompts the user to contact their team lead or admin.)
+- What happens when two users edit the same report simultaneously? (The server uses optimistic locking — each TimeReport and AbsenceReport carries a `version` integer. The second writer receives HTTP 409 Conflict if the record changed since they loaded it. The client displays a clear conflict message and reloads the latest version so the user can re-apply their changes.)
 
 ---
 
@@ -269,6 +288,7 @@ can now edit the same report.
 - **FR-001**: The system MUST authenticate users via email and password. Email matching MUST be case-insensitive (normalized to lowercase).
 - **FR-002**: User accounts MUST be created exclusively by an admin; self-registration is not permitted.
 - **FR-003**: The system MUST enforce role-based access at every data boundary; client-side checks are supplementary only.
+- **FR-003a**: Admins are also employees and MUST be able to submit their own time and absence reports via the Time Management Platform. An admin logging into the Time Management Platform is subject to the same reporting rules as any other employee. Their admin capabilities remain available exclusively through the Admin Platform.
 - **FR-004**: Inactive users MUST NOT be able to log in.
 - **FR-005**: Passwords MUST be stored as hashed values; plain-text storage is prohibited.
 - **FR-006**: Sessions MUST use token-based authentication with a 2-hour access token and a 1-month refresh token.
@@ -284,7 +304,7 @@ can now edit the same report.
 - **FR-013**: Work description MUST NOT exceed 500 characters.
 - **FR-014**: The system MUST display a non-blocking warning when daily reported hours are below or above 9 hours.
 - **FR-015**: Client, project, and task dropdowns MUST show only entities for which the user has active assignments; a single available option MUST be auto-selected.
-- **FR-016**: The system MUST support server-side draft saving so in-progress reports survive browser refresh and device changes.
+- **FR-016**: The system MUST support server-side draft saving so in-progress reports survive browser refresh and device changes. A draft is never automatically expired — it persists until the employee either finalizes it (converting it to a saved report) or explicitly discards it. Only one draft per user is permitted at a time; starting a new draft replaces the previous one after a confirmation prompt.
 - **FR-017**: Employees MUST be able to edit their own reports until the relevant month is locked.
 
 **Timer**
@@ -300,6 +320,8 @@ can now edit the same report.
 - **FR-023**: The system MUST support partial-day absences; when reported, the employee MUST also submit a work report for the remaining hours.
 - **FR-024**: Sick Leave absences MUST require a supporting document; Military Reserve Duty absences MUST require a supporting document.
 - **FR-025**: The system MUST allow document upload after an absence report is saved (documents may arrive later).
+- **FR-025a**: Absence documents MUST be access-controlled: only the report owner (the employee who submitted the absence) and admins MAY download or view an uploaded document. Any other authenticated user attempting to access the file MUST receive HTTP 403 Forbidden.
+- **FR-025b**: The system MUST reject document uploads exceeding **15 MB**; the client MUST display a clear file-size error before the upload is attempted where possible, and the server MUST enforce the limit as a hard ceiling (HTTP 413).
 - **FR-026**: The system MUST support a working-calendar model that defines standard hours and working/non-working status per day to handle holidays and shortened days.
 
 **Monthly View**
@@ -322,6 +344,10 @@ can now edit the same report.
 - **FR-036**: Admins MUST be able to lock a specific month, making all reports for that month read-only for non-admin roles.
 - **FR-037**: Admins MUST be able to reopen a locked month.
 - **FR-038**: The system MUST record: locked month, lock/reopen timestamp, admin who performed the action.
+
+**Concurrency**
+
+- **FR-042**: TimeReport and AbsenceReport MUST implement optimistic locking via a `version` integer field. The client MUST send the current version on every PATCH/DELETE. If the server-side version does not match, the request MUST be rejected with HTTP 409 Conflict. The response body MUST include the latest record so the client can display a conflict message and let the user re-apply their changes.
 
 **UI & Accessibility**
 
@@ -364,6 +390,8 @@ can now edit the same report.
 
 ## Assumptions
 
+- The system is deployed as two separate frontend applications (Time Management Platform for employees/team leads; Admin Platform for admins) that both connect to the same backend API and the same PostgreSQL database.
+- Both platforms share an identical login page backed by the same `/auth/login` endpoint; post-login routing is determined by the user's role.
 - The work week is Sunday through Thursday; Friday and Saturday are weekend days for absence calculations.
 - The daily working standard is 9 hours. Deviations above or below this threshold trigger a warning, not a blocking error.
 - All users are internal company employees; there are no external or guest accounts.
@@ -373,7 +401,7 @@ can now edit the same report.
 - Vacation and sick day balance tracking (quotas, accrual) are out of scope for v1.
 - There is no self-service password reset; admin performs all password resets.
 - The system does not calculate payroll; it is a data collection tool only.
-- Document upload for absence records supports standard file types (PDF, images); maximum file size is implementation-defined but should be practical for mobile upload.
+- Document upload for absence records supports standard file types (PDF, images); maximum file size is **15 MB** per upload.
 - Team leads cannot edit other employees' reports; this is an admin-only capability in v1.
 - There is no approval workflow for reports; reports are submitted directly without a manager review step.
 - The exact closure date of a reporting month is not automatically enforced; admins manually lock months at their discretion.
@@ -386,4 +414,12 @@ can now edit the same report.
 ### Session 2026-05-10
 
 - Q: Should user email matching be case-insensitive? → A: Yes — normalize email to lowercase on every login lookup (RFC-compliant; prevents "account not found" errors from casing mismatches).
+
+### Session 2026-05-11
+
+- Q: When two users edit the same report simultaneously, how should conflicts be handled? → A: Optimistic locking — `version` integer on TimeReport and AbsenceReport; second writer gets HTTP 409 with the latest record; client shows conflict message and reloads.
+- Q: Who is authorized to download uploaded absence documents? → A: Owner + Admin only — the employee who submitted the absence and admins may access documents; all other authenticated users receive HTTP 403.
+- Q: What is the maximum file size for absence document uploads? → A: 15 MB — enforced server-side (HTTP 413); client validates before upload where possible.
+- Q: Can admins submit their own time and absence reports, and if so, via which platform? → A: Yes — admins are employees and use the Time Management Platform for their own reporting; admin management capabilities remain Admin Platform only.
+- Q: When does a server-side draft expire if the employee never finalizes it? → A: Never automatically — draft persists until finalized or manually discarded; starting a new draft replaces the existing one after a confirmation prompt.
 - Q: Is HTTPS required in production? → A: Yes — production deployments must run behind HTTPS; the refresh token cookie carries the `secure` flag and must not be transmitted over plain HTTP.

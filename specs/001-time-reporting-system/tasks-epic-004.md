@@ -2,6 +2,7 @@
 
 **Sprint**: 1 (API: Phase 1–2) + Sprint 2 (UI: Phase 3–4)
 **Spec Priority**: P1 (MVP core) | **User Story**: US1
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
 **Assignees**: Dev 1 (backend) + Dev 3 (frontend)
 **Depends on**: EPIC-001 (auth + monthLock middleware), EPIC-003 (employee needs assigned tasks)
 **Blocks**: EPIC-006 (monthly calendar reads TimeReport data), EPIC-007 (timer End pre-populates this form)

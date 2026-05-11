@@ -1,6 +1,7 @@
 # Tasks: EPIC-007 — Timer Feature
 
 **Sprint**: 2 | **Days**: 3–4 | **Spec Priority**: P4 | **User Story**: US4
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 3 (frontend)
 **Depends on**: EPIC-001 (auth), EPIC-004 Phase 3 (DailyReportPage must accept pre-fill state)
 **Blocks**: nothing

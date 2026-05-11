@@ -1,6 +1,7 @@
 # Tasks: EPIC-005 — Absence Reporting
 
 **Sprint**: 2 | **Days**: 3–4 | **Spec Priority**: P2 | **User Story**: US2
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth + monthLock middleware, UPLOAD_DIR env var)
 **Blocks**: EPIC-006 (absence records feed into COMPLETE day-status calculation)
@@ -25,7 +26,7 @@
 ## Phase 2: Document Upload API (User Story: US2)
 
 - [ ] T004 [US2] Implement FileStorageService interface with methods saveFile({file, absenceReportId}) → {storagePath, fileName, mimeType} — writes to UPLOAD_DIR/absences/{absenceReportId}/{uuid}-{originalname}; deleteFile(storagePath) — fs.unlink the stored path; constructor reads UPLOAD_DIR from process.env; create upload directory on startup if not exists: backend/src/services/file-storage.service.ts
-- [ ] T005 [US2] Implement Multer upload middleware: diskStorage with destination UPLOAD_DIR/tmp/, filename as uuid; fileFilter allowing only application/pdf, image/jpeg, image/png, image/heic (400 if rejected); limits.fileSize 10MB: backend/src/middleware/upload.ts
+- [ ] T005 [US2] Implement Multer upload middleware: diskStorage with destination UPLOAD_DIR/tmp/, filename as uuid; fileFilter allowing only application/pdf, image/jpeg, image/png, image/heic (400 if rejected); limits.fileSize 15MB: backend/src/middleware/upload.ts
 - [ ] T006 [US2] Implement POST /absences/:id/document (authenticateToken, apply Multer middleware from upload.ts, do NOT apply checkMonthLock per FR-025): verify absenceReport exists and belongs to req.user or actor is ADMIN (404/403); if existing AbsenceDocument exists call FileStorageService.deleteFile(existing.storagePath) and delete old AbsenceDocument record; call FileStorageService.saveFile, insert new AbsenceDocument; if absence status was DOCUMENT_PENDING set status SUBMITTED; return 200 {id, fileName, mimeType, uploadedAt}; DELETE /absences/:id/document (authenticateToken): delete AbsenceDocument record + file; if absence type is SICK_LEAVE or MILITARY_RESERVE set status back to DOCUMENT_PENDING; return 204: backend/src/routes/absences.ts (extend), backend/src/services/absence.service.ts (extend)
 
 ---
@@ -34,7 +35,7 @@
 
 - [ ] T007 [US2] Create React Query hooks for absences: useAbsences(userId, year, month) — GET /absences?userId=&year=&month=; useCreateAbsence — POST /absences; useUpdateAbsence — PATCH /absences/:id; useDeleteAbsence — DELETE /absences/:id; useUploadDocument — POST /absences/:id/document (multipart/form-data); useDeleteDocument — DELETE /absences/:id/document: frontend/src/services/absences.service.ts
 - [ ] T008 [US2] Implement absence form page (Hebrew RTL, mobile-first): start-date input (type=date, Hebrew label "תאריך התחלה"), end-date input (type=date, Hebrew label "תאריך סיום"); absence type select with Hebrew options (חופשה / מחלה / מילואים / אחר); partial-day checkbox with Hebrew label "היעדרות חלקית" — when checked show notice "יש להגיש גם דיווח שעות לשארית היום"; live absence-day counter showing "X ימי היעדרות" recalculated client-side as user picks dates (iterate range, skip dayOfWeek 5+6); document-required badge "נדרש מסמך" shown for SICK_LEAVE and MILITARY_RESERVE type; React Hook Form + Zod (startDate required, endDate required, absenceType required); on submit calls useCreateAbsence, shows Hebrew success "ההיעדרות נשמרה" and reveals DocumentUpload component with the new absence id: frontend/src/pages/absences/AbsenceFormPage.tsx
-- [ ] T009 [US2] Implement document upload widget rendered after absence is saved: file input accepting .pdf,.jpg,.jpeg,.png,.heic; on file select call useUploadDocument via FormData; show upload progress bar; on success show green "המסמך הועלה בהצלחה" and replace doc-required badge with "מסמך מצורף" badge; on error (413 too large) show Hebrew error "הקובץ גדול מדי (מקסימום 10MB)"; show "מחק מסמך" button that calls useDeleteDocument and reverts badge: frontend/src/pages/absences/components/DocumentUpload.tsx
+- [ ] T009 [US2] Implement document upload widget rendered after absence is saved: file input accepting .pdf,.jpg,.jpeg,.png,.heic; on file select call useUploadDocument via FormData; show upload progress bar; on success show green "המסמך הועלה בהצלחה" and replace doc-required badge with "מסמך מצורף" badge; on error (413 too large) show Hebrew error "הקובץ גדול מדי (מקסימום 15MB)"; show "מחק מסמך" button that calls useDeleteDocument and reverts badge: frontend/src/pages/absences/components/DocumentUpload.tsx
 
 ---
 

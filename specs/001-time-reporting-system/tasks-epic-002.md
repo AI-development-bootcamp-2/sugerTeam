@@ -1,6 +1,7 @@
 # Tasks: EPIC-002 — Admin Entity Management
 
 **Sprint**: 1 | **Days**: 1–2 | **Spec Priority**: P6 | **User Story**: US6
+**Platform**: 🟠 Admin Platform — all frontend work targets `frontend-admin/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 fully complete (auth middleware, Prisma schema, DB running, Express app)
 **Blocks**: EPIC-003 (needs users + tasks to assign), EPIC-004 (employees need tasks to report against)

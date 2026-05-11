@@ -1,6 +1,7 @@
 # Tasks: EPIC-009 — CI/CD Pipeline
 
 **Sprint**: 3 | **Days**: 1–2 | **Spec Priority**: P8 | **User Story**: DevOps
+**Platform**: ⚙️ Both platforms — CI covers `backend/`, `frontend/`, and `frontend-admin/`; CD deploys all three
 **Assignees**: Dev 1 (infrastructure)
 **Depends on**: EPIC-001 (monorepo structure, Docker Compose, ESLint/Prettier, test setup)
 **Blocks**: nothing — can be added at any point after EPIC-001
@@ -20,7 +21,7 @@
 
 - [X] T002 Add a `test` script to `backend/package.json` using Jest: install `jest`, `ts-jest`, `@types/jest` as dev dependencies; create `backend/jest.config.ts` with preset `ts-jest`, testEnvironment `node`, testMatch `**/*.test.ts`; write a smoke test `backend/src/__tests__/health.test.ts` that imports the Express app and asserts `GET /api/v1/health` returns 200 using `supertest`: `backend/package.json`, `backend/jest.config.ts`, `backend/src/__tests__/health.test.ts`
 
-- [X] T003 Configure GitHub branch protection on `main` (document steps — cannot be done via workflow file): require status check `ci` to pass before merging; require at least 1 approving review; disallow direct pushes to `main`; enable "Require branches to be up to date before merging". Document these settings in `.github/BRANCH_PROTECTION.md` so any repo admin can apply them: `.github/BRANCH_PROTECTION.md`
+- [ ] T003 Configure GitHub branch protection on `main` (document steps — cannot be done via workflow file): require status check `ci` to pass before merging; require at least 1 approving review; disallow direct pushes to `main`; enable "Require branches to be up to date before merging". Document these settings in `.github/BRANCH_PROTECTION.md` so any repo admin can apply them: `.github/BRANCH_PROTECTION.md`
 
 **Checkpoint**: Open a draft PR → GitHub Actions runs `ci` job → lint, type-check, and health test all pass; intentionally break a lint rule → CI fails and blocks merge
 

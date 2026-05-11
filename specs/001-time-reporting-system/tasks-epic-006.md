@@ -1,6 +1,7 @@
 # Tasks: EPIC-006 — Monthly Calendar View
 
 **Sprint**: 2 | **Days**: 4–5 | **Spec Priority**: P3 | **User Story**: US3
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth, WorkCalendarDay seeded), EPIC-004 (TimeReports in DB), EPIC-005 (AbsenceReports in DB for COMPLETE status)
 **Blocks**: nothing
