@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,24 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+const loginResolver: Resolver<LoginFormData> = async (values) => {
+  const result = loginSchema.safeParse(values);
+  if (result.success) {
+    return { values: result.data, errors: {} };
+  }
+  return {
+    values: {},
+    errors: result.error.issues.reduce<Record<string, { type: string; message: string }>>(
+      (acc, issue) => {
+        const key = issue.path[0] as string;
+        if (!acc[key]) acc[key] = { type: 'validation', message: issue.message };
+        return acc;
+      },
+      {},
+    ),
+  };
+};
 
 interface LoginResponse {
   accessToken: string;
@@ -90,7 +108,7 @@ export function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: loginResolver,
     defaultValues: { rememberMe: false },
   });
 
