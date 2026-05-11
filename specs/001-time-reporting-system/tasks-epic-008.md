@@ -1,7 +1,7 @@
-# Tasks: EPIC-008 — Month Closure & Audit Log
+﻿# Tasks: EPIC-008 — Month Closure & Audit Log
 
 **Sprint**: 2 | **Days**: 4–5 | **Spec Priority**: P7 | **User Story**: US7
-**Platform**: 🟠 Admin Platform — month closure UI and audit log UI target `frontend-admin/`; backend routes are shared API
+**Platform**: 🟠 Admin Platform — month closure UI and audit log UI target `frontend-admin`; backend routes are shared API
 **Assignees**: Dev 1 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth, MonthLock + AuditLog entities in schema, monthLock middleware), EPIC-004 (report routes to integrate audit), EPIC-005 (absence routes to integrate audit)
 **Blocks**: nothing (monthLock middleware was already wired in EPIC-001; this epic adds the management UI and audit capture)
@@ -31,8 +31,8 @@
 
 ## Phase 3: Month Closure UI (User Story: US7)
 
-- [ ] T006 [US7] Create React Query hooks: useMonths() — GET /months; useLockMonth() — POST /months/:year/:month/lock (on success invalidates useMonths); useUnlockMonth() — POST /months/:year/:month/unlock (on success invalidates useMonths); useAuditLogs({employeeId?, year?, month?}) — GET /audit-logs with query params: frontend/src/services/months.service.ts
-- [ ] T007 [US7] Implement admin month closure page (Hebrew RTL, mobile-first): table showing months in format "חודש/שנה" (e.g., "05/2026") with columns: חודש, סטטוס (badge: "נעול"=red / "פתוח"=green), נעול ב, נעול על-ידי, פעולות; Lock button opens Hebrew confirmation dialog "האם לנעול את חודש 05/2026? לא ניתן לערוך דיווחים לאחר הנעילה." with "נעל" confirm and "ביטול" cancel — on confirm calls useLockMonth; Unlock button opens dialog "האם לפתוח מחדש את החודש?" — on confirm calls useUnlockMonth; page pre-populates current month and 3 previous months as rows even if no MonthLock record exists (show as "פתוח"); add "נעילת חודשים" link to AdminLayout sidebar: frontend/src/pages/admin/months/MonthClosurePage.tsx, frontend/src/components/AdminLayout.tsx (extend)
+- [ ] T006 [US7] Create React Query hooks: useMonths() — GET /months; useLockMonth() — POST /months/:year/:month/lock (on success invalidates useMonths); useUnlockMonth() — POST /months/:year/:month/unlock (on success invalidates useMonths); useAuditLogs({employeeId?, year?, month?}) — GET /audit-logs with query params: frontend-time_management/src/services/months.service.ts
+- [ ] T007 [US7] Implement admin month closure page (Hebrew RTL, mobile-first): table showing months in format "חודש/שנה" (e.g., "05/2026") with columns: חודש, סטטוס (badge: "נעול"=red / "פתוח"=green), נעול ב, נעול על-ידי, פעולות; Lock button opens Hebrew confirmation dialog "האם לנעול את חודש 05/2026? לא ניתן לערוך דיווחים לאחר הנעילה." with "נעל" confirm and "ביטול" cancel — on confirm calls useLockMonth; Unlock button opens dialog "האם לפתוח מחדש את החודש?" — on confirm calls useUnlockMonth; page pre-populates current month and 3 previous months as rows even if no MonthLock record exists (show as "פתוח"); add "נעילת חודשים" link to AdminLayout sidebar: frontend-time_management/src/pages/admin/months/MonthClosurePage.tsx, frontend-time_management/src/components/AdminLayout.tsx (extend)
 
 ---
 

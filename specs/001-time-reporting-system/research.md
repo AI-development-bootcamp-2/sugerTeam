@@ -1,4 +1,4 @@
-# Research: Time Reporting System
+﻿# Research: Time Reporting System
 
 **Phase**: 0 — Pre-Design Research
 **Feature**: Time Reporting System
@@ -118,7 +118,7 @@ standard for Node.js backend testing. Both support the 60% minimum coverage requ
 
 ### Docker Compose Setup
 
-**Decision**: Three services — `backend` (Node.js), `frontend` (Vite dev server / Nginx for
+**Decision**: Three services — `backend` (Node.js), `frontend-time_management` (Vite dev server / Nginx for
 prod), `db` (PostgreSQL 15)  
 **Rationale**: Matches spec requirement. A `.env` file at root controls all port, database
 URL, and JWT secret values. `db` container uses a named volume for data persistence.  

@@ -1,7 +1,7 @@
-# Tasks: EPIC-009 — CI/CD Pipeline
+﻿# Tasks: EPIC-009 — CI/CD Pipeline
 
 **Sprint**: 3 | **Days**: 1–2 | **Spec Priority**: P8 | **User Story**: DevOps
-**Platform**: ⚙️ Both platforms — CI covers `backend/`, `frontend/`, and `frontend-admin/`; CD deploys all three
+**Platform**: ⚙️ Both platforms — CI covers `backend/`, `frontend-time_management/`, and `frontend-admin`; CD deploys all three
 **Assignees**: Dev 1 (infrastructure)
 **Depends on**: EPIC-001 (monorepo structure, Docker Compose, ESLint/Prettier, test setup)
 **Blocks**: nothing — can be added at any point after EPIC-001
@@ -33,19 +33,19 @@
 
 - [ ] T005 Add required GitHub repository secrets (document in `.github/SECRETS.md` — values are set manually in repo Settings → Secrets): `RENDER_DEPLOY_HOOK_URL` (backend service deploy hook from Render dashboard), `DATABASE_URL` (Render PostgreSQL internal URL), `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`; add optional `RENDER_DEPLOY_HOOK_FRONTEND_URL` if frontend is a separate Render service: `.github/SECRETS.md`
 
-- [ ] T006 Create `render.yaml` (Render Blueprint) at repo root defining two services: `backend` (type: web, runtime: docker, dockerfilePath: backend/Dockerfile, plan: free, envVars referencing `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `PORT=3000`) and `frontend` (type: web, runtime: docker, dockerfilePath: frontend/Dockerfile, plan: free, envVars `NGINX_BACKEND_URL` pointing to the backend service internal URL — no `VITE_API_URL`; frontend code uses relative `/api` path and nginx proxies it at runtime); add a `databases` section for a free-tier PostgreSQL 15 instance named `suger-db`: `render.yaml`
+- [ ] T006 Create `render.yaml` (Render Blueprint) at repo root defining two services: `backend` (type: web, runtime: docker, dockerfilePath: backend/Dockerfile, plan: free, envVars referencing `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `PORT=3000`) and `frontend-time_management` (type: web, runtime: docker, dockerfilePath: frontend-time_management/Dockerfile, plan: free, envVars `NGINX_BACKEND_URL` pointing to the backend service internal URL — no `VITE_API_URL`; frontend code uses relative `/api` path and nginx proxies it at runtime); add a `databases` section for a free-tier PostgreSQL 15 instance named `suger-db`: `render.yaml`
 
-**Checkpoint**: Merge a passing PR to `main` → CD workflow fires → Render redeploys backend and frontend automatically; confirm `GET <render-backend-url>/api/v1/health` returns 200
+**Checkpoint**: Merge a passing PR to `main` → CD workflow fires → Render redeploys backend and frontend-time_management automatically; confirm `GET <render-backend-url>/api/v1/health` returns 200
 
 ---
 
 ## Phase 3: Docker Production Hardening
 
-- [ ] T007 Update `frontend/Dockerfile` to use a multi-stage build: stage 1 (`builder`) installs deps and runs `pnpm build`; stage 2 (`runner`) uses `nginx:alpine`, copies `dist/` from builder into `/usr/share/nginx/html`, copies a custom `nginx.conf` that serves `index.html` for all routes (SPA fallback) and proxies `/api` to the backend service URL via env-substituted `NGINX_BACKEND_URL`; expose port 80: `frontend/Dockerfile`, `frontend/nginx.conf`
+- [ ] T007 Update `frontend-time_management/Dockerfile` to use a multi-stage build: stage 1 (`builder`) installs deps and runs `pnpm build`; stage 2 (`runner`) uses `nginx:alpine`, copies `dist/` from builder into `/usr/share/nginx/html`, copies a custom `nginx.conf` that serves `index.html` for all routes (SPA fallback) and proxies `/api` to the backend service URL via env-substituted `NGINX_BACKEND_URL`; expose port 80: `frontend-time_management/Dockerfile`, `frontend-time_management/nginx.conf`
 
 - [ ] T008 Verify `backend/Dockerfile` uses a multi-stage build: stage 1 compiles TypeScript (`pnpm build`); stage 2 copies only `dist/` and `node_modules` (production only via `pnpm install --prod`), runs `node dist/server.js`; ensure `ENTRYPOINT` runs `pnpm exec prisma migrate deploy` before starting the server so migrations run automatically on each deploy: `backend/Dockerfile`, `backend/entrypoint.sh`
 
-**Checkpoint**: `docker build -f frontend/Dockerfile .` and `docker build -f backend/Dockerfile .` both succeed; production images are smaller than dev images (no devDependencies, no source files)
+**Checkpoint**: `docker build -f frontend-time_management/Dockerfile .` and `docker build -f backend/Dockerfile .` both succeed; production images are smaller than dev images (no devDependencies, no source files)
 
 ---
 

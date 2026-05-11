@@ -1,7 +1,7 @@
-# Tasks: EPIC-007 — Timer Feature
+﻿# Tasks: EPIC-007 — Timer Feature
 
 **Sprint**: 2 | **Days**: 3–4 | **Spec Priority**: P4 | **User Story**: US4
-**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend-time_management/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 3 (frontend)
 **Depends on**: EPIC-001 (auth), EPIC-004 Phase 3 (DailyReportPage must accept pre-fill state)
 **Blocks**: nothing
@@ -30,9 +30,9 @@
 
 ## Phase 3: Timer UI (User Story: US4)
 
-- [ ] T004 [US4] Create React Query hooks for timer: useTimerStatus() — GET /timer/status (refetchInterval 30000 when isActive, disabled otherwise); useStartTimer() — POST /timer/start (on success invalidates useTimerStatus); useStopTimer() — POST /timer/stop (on success returns pre-fill data, invalidates useTimerStatus): frontend/src/services/timer.service.ts
-- [ ] T005 [US4] Implement Zustand timer store: state { isActive: boolean, startedAt: string | null }; actions setTimerState(isActive, startedAt), clearTimer(); initialize from useTimerStatus response on app mount via a bootstrap hook in main.tsx; timer store drives the client-side elapsed counter without polling every second: frontend/src/store/timerStore.ts
-- [ ] T006 [US4] Implement TimerWidget component rendered inside the main authenticated app layout header (AppLayout.tsx): when timer isActive shows red pulsing dot + elapsed time display counting up as HH:MM:SS using setInterval from startedAt (updates every second using timerStore.startedAt); shows "סיים יום" (End) button that calls useStopTimer, receives pre-fill {date, startTime, endTime}, navigates to /reports using React Router navigate with state {prefill: {date, startTime, endTime, durationMinutes}} clearing the timer store on success; when timer inactive shows "התחל יום" (Start) button that calls useStartTimer and updates timer store; add TimerWidget to AppLayout header so it is visible on all authenticated pages; update DailyReportPage to read location.state.prefill on mount and pre-populate date, startTime, endTime fields if present: frontend/src/pages/timer/TimerWidget.tsx, frontend/src/components/AppLayout.tsx, frontend/src/pages/reports/DailyReportPage.tsx (extend to read route state prefill)
+- [ ] T004 [US4] Create React Query hooks for timer: useTimerStatus() — GET /timer/status (refetchInterval 30000 when isActive, disabled otherwise); useStartTimer() — POST /timer/start (on success invalidates useTimerStatus); useStopTimer() — POST /timer/stop (on success returns pre-fill data, invalidates useTimerStatus): frontend-time_management/src/services/timer.service.ts
+- [ ] T005 [US4] Implement Zustand timer store: state { isActive: boolean, startedAt: string | null }; actions setTimerState(isActive, startedAt), clearTimer(); initialize from useTimerStatus response on app mount via a bootstrap hook in main.tsx; timer store drives the client-side elapsed counter without polling every second: frontend-time_management/src/store/timerStore.ts
+- [ ] T006 [US4] Implement TimerWidget component rendered inside the main authenticated app layout header (AppLayout.tsx): when timer isActive shows red pulsing dot + elapsed time display counting up as HH:MM:SS using setInterval from startedAt (updates every second using timerStore.startedAt); shows "סיים יום" (End) button that calls useStopTimer, receives pre-fill {date, startTime, endTime}, navigates to /reports using React Router navigate with state {prefill: {date, startTime, endTime, durationMinutes}} clearing the timer store on success; when timer inactive shows "התחל יום" (Start) button that calls useStartTimer and updates timer store; add TimerWidget to AppLayout header so it is visible on all authenticated pages; update DailyReportPage to read location.state.prefill on mount and pre-populate date, startTime, endTime fields if present: frontend-time_management/src/pages/timer/TimerWidget.tsx, frontend-time_management/src/components/AppLayout.tsx, frontend-time_management/src/pages/reports/DailyReportPage.tsx (extend to read route state prefill)
 
 ---
 

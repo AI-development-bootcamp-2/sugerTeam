@@ -1,4 +1,4 @@
-# Quickstart: Time Reporting System
+﻿# Quickstart: Time Reporting System
 
 **Date**: 2026-05-06 | **Plan**: [plan.md](plan.md)
 
@@ -22,7 +22,7 @@ cd time-reporting-system
 cd backend && pnpm install && cd ..
 
 # Install frontend dependencies
-cd frontend && pnpm install && cd ..
+cd frontend-time_management && pnpm install && cd ..
 ```
 
 ---
@@ -41,7 +41,7 @@ UPLOAD_DIR="./uploads/absence-docs"
 PORT=3000
 ```
 
-### Frontend (`frontend/.env`)
+### Frontend (`frontend-time_management/.env`)
 
 ```env
 VITE_API_URL=http://localhost:3000
@@ -70,7 +70,7 @@ pnpm prisma db seed
 cd backend && pnpm run dev
 
 # Terminal 2 — Frontend (port 5173)
-cd frontend && pnpm run dev
+cd frontend-time_management && pnpm run dev
 ```
 
 Open http://localhost:5173 — login with `admin@company.com` / `Admin1234!`
@@ -93,7 +93,7 @@ Open http://localhost:5173 — login with `admin@company.com` / `Admin1234!`
 cd backend && pnpm test && pnpm test:e2e
 
 # Frontend component tests
-cd frontend && pnpm test
+cd frontend-time_management && pnpm test
 ```
 
 ---

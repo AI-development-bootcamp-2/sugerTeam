@@ -1,7 +1,7 @@
-# Tasks: EPIC-002 — Admin Entity Management
+﻿# Tasks: EPIC-002 — Admin Entity Management
 
 **Sprint**: 1 | **Days**: 1–2 | **Spec Priority**: P6 | **User Story**: US6
-**Platform**: 🟠 Admin Platform — all frontend work targets `frontend-admin/`; backend routes are shared API
+**Platform**: 🟠 Admin Platform — all frontend work targets `frontend-admin`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 fully complete (auth middleware, Prisma schema, DB running, Express app)
 **Blocks**: EPIC-003 (needs users + tasks to assign), EPIC-004 (employees need tasks to report against)
@@ -35,20 +35,20 @@
 
 ## Phase 3: Admin Users UI (User Story: US6)
 
-- [ ] T009 [US6] Create React Query hooks for user management using API client: useUsers(filters: {role?, isActive?, search?}) — GET /users; useCreateUser — POST /users (invalidates useUsers on success); useUpdateUser — PATCH /users/:id (invalidates useUsers); useDeactivateUser — PATCH /users/:id/deactivate; useActivateUser — PATCH /users/:id/activate: frontend/src/services/users.service.ts
-- [ ] T010 [US6] Implement admin users list page (Hebrew RTL, mobile-first): search input calling useUsers({search}), role filter tab pills (כולם/עובד/ראש צוות/מנהל), data table with columns (שם מלא, דוא״ל, תפקיד, סטטוס, פעולות); deactivate button per active-user row with confirmation dialog ("האם להשבית משתמש זה?"); activate button per inactive-user row; "+ משתמש חדש" button opens CreateUserModal: frontend/src/pages/admin/users/UsersListPage.tsx
-- [ ] T011 [US6] Implement create user modal/dialog: React Hook Form + Zod (fullName required, email required + .email(), password required min 8, role required — select with Hebrew labels); on submit calls useCreateUser, shows Hebrew success toast ("משתמש נוצר בהצלחה"), closes modal and invalidates list; shows 409 error inline ("כתובת דוא״ל כבר קיימת"): frontend/src/pages/admin/users/CreateUserModal.tsx
-- [ ] T012 [US6] Implement edit user sheet (slide-over panel): pre-populated form with current fullName, email, role (password field omitted); on submit calls useUpdateUser; inline Hebrew error feedback; separate confirm-dialog for deactivate/activate actions: frontend/src/pages/admin/users/EditUserModal.tsx
+- [ ] T009 [US6] Create React Query hooks for user management using API client: useUsers(filters: {role?, isActive?, search?}) — GET /users; useCreateUser — POST /users (invalidates useUsers on success); useUpdateUser — PATCH /users/:id (invalidates useUsers); useDeactivateUser — PATCH /users/:id/deactivate; useActivateUser — PATCH /users/:id/activate: frontend-time_management/src/services/users.service.ts
+- [ ] T010 [US6] Implement admin users list page (Hebrew RTL, mobile-first): search input calling useUsers({search}), role filter tab pills (כולם/עובד/ראש צוות/מנהל), data table with columns (שם מלא, דוא״ל, תפקיד, סטטוס, פעולות); deactivate button per active-user row with confirmation dialog ("האם להשבית משתמש זה?"); activate button per inactive-user row; "+ משתמש חדש" button opens CreateUserModal: frontend-time_management/src/pages/admin/users/UsersListPage.tsx
+- [ ] T011 [US6] Implement create user modal/dialog: React Hook Form + Zod (fullName required, email required + .email(), password required min 8, role required — select with Hebrew labels); on submit calls useCreateUser, shows Hebrew success toast ("משתמש נוצר בהצלחה"), closes modal and invalidates list; shows 409 error inline ("כתובת דוא״ל כבר קיימת"): frontend-time_management/src/pages/admin/users/CreateUserModal.tsx
+- [ ] T012 [US6] Implement edit user sheet (slide-over panel): pre-populated form with current fullName, email, role (password field omitted); on submit calls useUpdateUser; inline Hebrew error feedback; separate confirm-dialog for deactivate/activate actions: frontend-time_management/src/pages/admin/users/EditUserModal.tsx
 
 ---
 
 ## Phase 4: Admin Clients / Projects / Tasks UI (User Story: US6)
 
-- [ ] T013 [US6] Create React Query hooks for entity management: useAllClients, useCreateClient, useUpdateClient; useActiveProjects(clientId), useCreateProject, useUpdateProject; useActiveTasks(projectId), useCreateTask, useUpdateTask: frontend/src/services/entities.service.ts
-- [ ] T014 [US6] Implement admin clients page (Hebrew RTL): accordion list of all clients; each row shows client name, status badge, edit button (opens inline edit form), deactivate/activate button; at top: "+ לקוח חדש" form (name field, submit); cascade visual hint: deactivating client shows warning "השבתה תסיר לקוח מהרשימות הפעילות. דיווחים קיימים לא ייפגעו.": frontend/src/pages/admin/clients/ClientsPage.tsx
-- [ ] T015 [US6] Implement projects subsection within each expanded client accordion row: list of projects with status, edit, deactivate/activate; "+ פרויקט חדש" inline form (name field); projects fetch uses useActiveProjects(clientId) for display: frontend/src/pages/admin/clients/ProjectsSection.tsx
-- [ ] T016 [US6] Implement tasks subsection within each expanded project row: list of tasks with OPEN/CLOSED status, edit, close/reopen; "+ משימה חדשה" inline form (name field): frontend/src/pages/admin/clients/TasksSection.tsx
-- [ ] T017 [US6] Implement RTL-aware admin layout: left sidebar in RTL (so visually on the right) with navigation links to Users, Clients/Projects/Tasks, Assignments, Month Closure; hamburger collapse on mobile; route protection wraps all /admin/* routes requiring ADMIN role (403 page for unauthorized); register admin layout and all admin pages in React Router: frontend/src/components/AdminLayout.tsx, frontend/src/router.tsx (extend with /admin/users, /admin/clients, /admin/assignments, /admin/months)
+- [ ] T013 [US6] Create React Query hooks for entity management: useAllClients, useCreateClient, useUpdateClient; useActiveProjects(clientId), useCreateProject, useUpdateProject; useActiveTasks(projectId), useCreateTask, useUpdateTask: frontend-time_management/src/services/entities.service.ts
+- [ ] T014 [US6] Implement admin clients page (Hebrew RTL): accordion list of all clients; each row shows client name, status badge, edit button (opens inline edit form), deactivate/activate button; at top: "+ לקוח חדש" form (name field, submit); cascade visual hint: deactivating client shows warning "השבתה תסיר לקוח מהרשימות הפעילות. דיווחים קיימים לא ייפגעו.": frontend-time_management/src/pages/admin/clients/ClientsPage.tsx
+- [ ] T015 [US6] Implement projects subsection within each expanded client accordion row: list of projects with status, edit, deactivate/activate; "+ פרויקט חדש" inline form (name field); projects fetch uses useActiveProjects(clientId) for display: frontend-time_management/src/pages/admin/clients/ProjectsSection.tsx
+- [ ] T016 [US6] Implement tasks subsection within each expanded project row: list of tasks with OPEN/CLOSED status, edit, close/reopen; "+ משימה חדשה" inline form (name field): frontend-time_management/src/pages/admin/clients/TasksSection.tsx
+- [ ] T017 [US6] Implement RTL-aware admin layout: left sidebar in RTL (so visually on the right) with navigation links to Users, Clients/Projects/Tasks, Assignments, Month Closure; hamburger collapse on mobile; route protection wraps all /admin/* routes requiring ADMIN role (403 page for unauthorized); register admin layout and all admin pages in React Router: frontend-time_management/src/components/AdminLayout.tsx, frontend-time_management/src/router.tsx (extend with /admin/users, /admin/clients, /admin/assignments, /admin/months)
 
 ---
 

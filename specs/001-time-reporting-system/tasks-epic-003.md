@@ -1,7 +1,7 @@
-# Tasks: EPIC-003 — Task Assignment
+﻿# Tasks: EPIC-003 — Task Assignment
 
 **Sprint**: 1 | **Days**: 2 | **Spec Priority**: P5 | **User Story**: US5
-**Platform**: 🟠 Admin Platform — assignment management UI lives in `frontend-admin/`; backend routes are shared API
+**Platform**: 🟠 Admin Platform — assignment management UI lives in `frontend-admin`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth middleware), EPIC-002 (users, tasks, and clients/projects must exist in DB)
 **Blocks**: EPIC-004 (employees need assigned tasks before they can submit reports)
@@ -24,8 +24,8 @@
 
 ## Phase 2: Assignment UI (User Story: US5)
 
-- [ ] T003 [US5] Create React Query hooks for assignments: useAssignmentsByTask(taskId) — GET /assignments?taskId= (enabled when taskId defined); useMyAssignedTasks() — GET /tasks/my-assigned; useCreateAssignment() — POST /assignments (invalidates useAssignmentsByTask on success); useDeleteAssignment() — DELETE /assignments/:id (invalidates useAssignmentsByTask on success): frontend/src/services/assignments.service.ts
-- [ ] T004 [US5] Implement team lead assignments page (Hebrew RTL, mobile-first): three-step cascading selector — client select (useActiveClients from entities.service), project select (useActiveProjects filtered by client), task select (useActiveTasks filtered by project); once task selected, show current assignees list (useAssignmentsByTask) with each assignee's fullName + email and an "הסר" (remove) button per row that calls useDeleteAssignment with Hebrew confirmation "האם להסיר את ההקצאה?"; employee search input (GET /users?search=&isActive=true) with add-assignment "הוסף" button that calls useCreateAssignment and shows Hebrew 409 error "העובד כבר מוקצה למשימה"; integrate page into admin layout sidebar under "הקצאות": frontend/src/pages/admin/assignments/AssignmentsPage.tsx
+- [ ] T003 [US5] Create React Query hooks for assignments: useAssignmentsByTask(taskId) — GET /assignments?taskId= (enabled when taskId defined); useMyAssignedTasks() — GET /tasks/my-assigned; useCreateAssignment() — POST /assignments (invalidates useAssignmentsByTask on success); useDeleteAssignment() — DELETE /assignments/:id (invalidates useAssignmentsByTask on success): frontend-time_management/src/services/assignments.service.ts
+- [ ] T004 [US5] Implement team lead assignments page (Hebrew RTL, mobile-first): three-step cascading selector — client select (useActiveClients from entities.service), project select (useActiveProjects filtered by client), task select (useActiveTasks filtered by project); once task selected, show current assignees list (useAssignmentsByTask) with each assignee's fullName + email and an "הסר" (remove) button per row that calls useDeleteAssignment with Hebrew confirmation "האם להסיר את ההקצאה?"; employee search input (GET /users?search=&isActive=true) with add-assignment "הוסף" button that calls useCreateAssignment and shows Hebrew 409 error "העובד כבר מוקצה למשימה"; integrate page into admin layout sidebar under "הקצאות": frontend-time_management/src/pages/admin/assignments/AssignmentsPage.tsx
 
 ---
 

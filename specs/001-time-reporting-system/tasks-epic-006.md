@@ -1,7 +1,7 @@
-# Tasks: EPIC-006 — Monthly Calendar View
+﻿# Tasks: EPIC-006 — Monthly Calendar View
 
 **Sprint**: 2 | **Days**: 4–5 | **Spec Priority**: P3 | **User Story**: US3
-**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend/`; backend routes are shared API
+**Platform**: 🟢 Time Management Platform — all frontend work targets `frontend-time_management/`; backend routes are shared API
 **Assignees**: Dev 2 (backend) + Dev 4 (frontend)
 **Depends on**: EPIC-001 (auth, WorkCalendarDay seeded), EPIC-004 (TimeReports in DB), EPIC-005 (AbsenceReports in DB for COMPLETE status)
 **Blocks**: nothing
@@ -23,10 +23,10 @@
 
 ## Phase 2: Monthly Calendar UI (User Story: US3)
 
-- [ ] T003 [US3] Extend reports React Query hooks file: useMonthlyStatus(userId, year, month) — GET /reports/monthly-status?userId=&year=&month=; useMonthlyReports(userId, year, month) — GET /reports?userId=&year=&month= (not yet in API — use multiple GET /reports?userId=&date= calls or add a month-scoped GET; for v1 use GET /absences + GET /reports mapped over days from useMonthlyStatus response to avoid extra endpoint): frontend/src/services/reports.service.ts (extend)
-- [ ] T004 [US3] Implement monthly calendar page (Hebrew RTL, mobile-first): header row with Hebrew month name + year (e.g., "מאי 2026"), right arrow ← (next in RTL direction) and left arrow → (previous) for month navigation; day-of-week header row with Hebrew abbreviations (א ב ג ד ה ו ש); day grid — 7 columns, weeks as rows; each day cell shows: date number + status chip (COMPLETE=ירוק, MISSING=אדום, EXCEPTIONAL=צהוב, NON_WORKING=אפור); locked-month banner at page top when isLocked=true: "החודש נעול — לא ניתן לבצע שינויים"; data from useMonthlyStatus: frontend/src/pages/reports/MonthlyCalendarPage.tsx
-- [ ] T005 [US3] Implement monthly report list below the calendar grid: for each SUBMITTED TimeReport in the selected month render a card showing Hebrew date (e.g., "יום ראשון, 6 במאי"), task name, duration ("X שעות Y דקות"), work location (Hebrew label); cards sorted by date ascending; if month is open (isLocked=false) clicking a card navigates to DailyReportPage with ?date=YYYY-MM-DD (pre-selects the date); if month is locked clicking a card opens ReadOnlyReportModal: frontend/src/pages/reports/components/MonthlyReportList.tsx
-- [ ] T006 [US3] Implement read-only report detail modal: displays all TimeReport fields in Hebrew (תאריך, מיקום עבודה, שעת התחלה, שעת סיום, משך, לקוח, פרויקט, משימה, תיאור); shows red "חודש נעול" badge at top; close button only (no edit/delete); opens over MonthlyCalendarPage as a portal/dialog: frontend/src/pages/reports/components/ReadOnlyReportModal.tsx
+- [ ] T003 [US3] Extend reports React Query hooks file: useMonthlyStatus(userId, year, month) — GET /reports/monthly-status?userId=&year=&month=; useMonthlyReports(userId, year, month) — GET /reports?userId=&year=&month= (not yet in API — use multiple GET /reports?userId=&date= calls or add a month-scoped GET; for v1 use GET /absences + GET /reports mapped over days from useMonthlyStatus response to avoid extra endpoint): frontend-time_management/src/services/reports.service.ts (extend)
+- [ ] T004 [US3] Implement monthly calendar page (Hebrew RTL, mobile-first): header row with Hebrew month name + year (e.g., "מאי 2026"), right arrow ← (next in RTL direction) and left arrow → (previous) for month navigation; day-of-week header row with Hebrew abbreviations (א ב ג ד ה ו ש); day grid — 7 columns, weeks as rows; each day cell shows: date number + status chip (COMPLETE=ירוק, MISSING=אדום, EXCEPTIONAL=צהוב, NON_WORKING=אפור); locked-month banner at page top when isLocked=true: "החודש נעול — לא ניתן לבצע שינויים"; data from useMonthlyStatus: frontend-time_management/src/pages/reports/MonthlyCalendarPage.tsx
+- [ ] T005 [US3] Implement monthly report list below the calendar grid: for each SUBMITTED TimeReport in the selected month render a card showing Hebrew date (e.g., "יום ראשון, 6 במאי"), task name, duration ("X שעות Y דקות"), work location (Hebrew label); cards sorted by date ascending; if month is open (isLocked=false) clicking a card navigates to DailyReportPage with ?date=YYYY-MM-DD (pre-selects the date); if month is locked clicking a card opens ReadOnlyReportModal: frontend-time_management/src/pages/reports/components/MonthlyReportList.tsx
+- [ ] T006 [US3] Implement read-only report detail modal: displays all TimeReport fields in Hebrew (תאריך, מיקום עבודה, שעת התחלה, שעת סיום, משך, לקוח, פרויקט, משימה, תיאור); shows red "חודש נעול" badge at top; close button only (no edit/delete); opens over MonthlyCalendarPage as a portal/dialog: frontend-time_management/src/pages/reports/components/ReadOnlyReportModal.tsx
 
 ---
 

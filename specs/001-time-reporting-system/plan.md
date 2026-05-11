@@ -1,4 +1,4 @@
-# Implementation Plan: Time Reporting System
+﻿# Implementation Plan: Time Reporting System
 
 **Branch**: `001-time-reporting-system` | **Date**: 2026-05-06 (Updated: 2026-05-11) | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-time-reporting-system/spec.md`
@@ -26,7 +26,7 @@ Built with Express.js (TypeScript) + React 18 + Vite + Prisma + PostgreSQL 15.
 **Storage**: PostgreSQL 15 (primary), local filesystem for absence document uploads in v1 (abstracted behind `FileStorageService` for future S3 swap)
 **Testing**: Jest + Supertest (backend), Vitest + React Testing Library (frontend)
 **Target Platform**: Web — Chrome, Edge, Safari; mobile-first responsive design
-**Project Type**: Two React SPAs (`frontend/` + `frontend-admin/`) + Express REST API (`backend/`)
+**Project Type**: Two React SPAs (`frontend-time_management/` + `frontend-admin`) + Express REST API (`backend/`)
 **Performance Goals**: API p95 < 200ms for standard report queries; form submit < 300ms perceived
 **Constraints**: Hebrew RTL throughout; mobile-first; 5-day delivery; no self-registration; no payroll; 15 MB max absence document upload
 **Scale/Scope**: 20–200 internal company users; single-tenant deployment
@@ -98,7 +98,7 @@ backend/                          # Shared Express REST API
 │   └── schema.prisma             # DB schema + migrations (single shared DB)
 └── tests/                        # Jest + Supertest
 
-frontend/                         # Time Management Platform (employees, team leads, admins)
+frontend-time_management/                         # Time Management Platform (employees, team leads, admins)
 ├── src/
 │   ├── components/               # Shared RTL-aware UI primitives; AppLayout; ProtectedRoute
 │   ├── pages/
@@ -112,7 +112,7 @@ frontend/                         # Time Management Platform (employees, team le
 │   └── main.tsx
 └── tests/                        # Vitest + React Testing Library
 
-frontend-admin/                   # Admin Platform (admins only)
+frontend-admin                   # Admin Platform (admins only)
 ├── src/
 │   ├── components/               # AdminLayout (RTL sidebar), shared primitives
 │   ├── pages/
@@ -127,7 +127,7 @@ frontend-admin/                   # Admin Platform (admins only)
 └── tests/                        # Vitest + React Testing Library
 ```
 
-**Structure Decision**: Two separate React SPAs (`frontend/` and `frontend-admin/`) sharing one `backend/` Express REST API and one PostgreSQL database. Login page component is duplicated across both SPAs (same implementation) and hits the same `/api/v1/auth/login` endpoint.
+**Structure Decision**: Two separate React SPAs (`frontend-time_management/` and `frontend-admin`) sharing one `backend/` Express REST API and one PostgreSQL database. Login page component is duplicated across both SPAs (same implementation) and hits the same `/api/v1/auth/login` endpoint.
 
 ---
 
@@ -156,7 +156,7 @@ Epics are grouped by the platform they primarily deliver. Backend API work is sh
 |------|------|---------------|--------|-----------|
 | EPIC-001 | Foundation & Authentication | P0 (prerequisite) | 1 | Dev 1 + Dev 3 |
 
-#### 🟢 Time Management Platform (`frontend/`) — employees, team leads, admins' own reporting
+#### 🟢 Time Management Platform (`frontend-time_management/`) — employees, team leads, admins' own reporting
 
 | Epic | Name | Spec Priority | Sprint | Assignees |
 |------|------|---------------|--------|-----------|
@@ -165,7 +165,7 @@ Epics are grouped by the platform they primarily deliver. Backend API work is sh
 | EPIC-006 | Monthly Calendar View | P3 | 2 | Dev 2 + Dev 4 |
 | EPIC-007 | Timer Feature | P4 | 2 | Dev 2 + Dev 3 |
 
-#### 🟠 Admin Platform (`frontend-admin/`) — admins and team leads managing the system
+#### 🟠 Admin Platform (`frontend-admin`) — admins and team leads managing the system
 
 | Epic | Name | Spec Priority | Sprint | Assignees |
 |------|------|---------------|--------|-----------|
@@ -192,7 +192,7 @@ Epics are grouped by the platform they primarily deliver. Backend API work is sh
 
 | Story ID | Title | Assignee | Story Points | Acceptance Criteria |
 |----------|-------|----------|:---:|---------------------|
-| US-001 (T001–T006) | Monorepo setup: .gitignore, .env.example, pnpm-workspace.yaml, Docker Compose (backend + frontend + postgres), ESLint/Prettier, Tailwind CSS | Dev 1 + Dev 3 | 2 | `docker-compose up` boots all three services; `GET /api/v1/health` returns 200 |
+| US-001 (T001–T006) | Monorepo setup: .gitignore, .env.example, pnpm-workspace.yaml, Docker Compose (backend + frontend-time_management + postgres), ESLint/Prettier, Tailwind CSS | Dev 1 + Dev 3 | 2 | `docker-compose up` boots all three services; `GET /api/v1/health` returns 200 |
 | US-002 (T007–T011) | Foundational: Express app, Prisma schema (all entities), migration, seed (admin@company.com), Prisma client singleton | Dev 1 | 3 | `prisma migrate dev` runs clean; seed creates admin@company.com |
 | US-003 (T012–T016) | Auth API: POST /auth/login, /auth/refresh, /auth/logout; bcrypt cost 12; JWT 2h/30d; auth + role guard middleware; monthLock middleware; route registration + error handlers | Dev 1 | 2 | Valid login returns tokens; invalid → 401; inactive → 401; refresh rotates tokens |
 | US-004 (T017–T020) | Auth UI: Zustand auth store, Axios API client (token refresh interceptor), React Router v6, Hebrew RTL login page (RHF + Zod) | Dev 3 | 2 | Employee logs in → dashboard; refresh survives page reload; mobile layout correct |
@@ -348,7 +348,7 @@ Epics are grouped by the platform they primarily deliver. Backend API work is sh
 | Story ID | Title | Assignee | Story Points | Acceptance Criteria |
 |----------|-------|----------|:---:|---------------------|
 | CI (T001–T003) | GitHub Actions CI workflow: lint + tsc + Jest on every PR to main/dev; PostgreSQL service container; pnpm cache; branch protection docs | Dev 1 | 2 | PR → CI runs; lint rule break → CI fails; health test passes |
-| CD (T004–T006) | GitHub Actions CD workflow (Render): triggered on CI success; Render deploy hook; secrets docs; render.yaml Blueprint (backend + frontend + free-tier PostgreSQL) | Dev 1 | 2 | Merge to main → Render redeploys; GET /api/v1/health → 200 on production URL |
+| CD (T004–T006) | GitHub Actions CD workflow (Render): triggered on CI success; Render deploy hook; secrets docs; render.yaml Blueprint (backend + frontend-time_management + free-tier PostgreSQL) | Dev 1 | 2 | Merge to main → Render redeploys; GET /api/v1/health → 200 on production URL |
 | Docker (T007–T008) | Production Docker hardening: frontend multi-stage Nginx SPA build (nginx proxies /api to backend); backend multi-stage with prisma migrate deploy in entrypoint | Dev 1 | 1 | Both images build; no dev deps in prod image; migrations auto-run on deploy |
 
 **EPIC-009 total**: 5 pts
