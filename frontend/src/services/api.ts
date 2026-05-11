@@ -53,10 +53,9 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Refresh endpoint returned 401 — bail immediately to avoid infinite loop
+    // Auth endpoints (login/refresh) returning 401 means bad credentials or no session — bail immediately
     if (
-      originalRequest.method?.toUpperCase() === 'POST' &&
-      originalRequest.url?.endsWith('/auth/refresh')
+      originalRequest.url?.includes('/auth/')
     ) {
       useAuthStore.getState().clearAuth();
       void router.navigate('/login');

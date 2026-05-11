@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { UserRole } from '@prisma/client';
+//import type { UserRole } from '@prisma/client';
 import { authenticateToken } from '@/middleware/auth';
 import { requireRole } from '@/middleware/roleGuard';
 import {
@@ -15,26 +15,28 @@ import {
 const router = Router();
 
 router.use(authenticateToken);
-router.use(requireRole(UserRole.ADMIN));
+router.use(requireRole('ADMIN'));
+
+const USER_ROLES = ['EMPLOYEE', 'TEAM_LEAD', 'ADMIN'] as const;
 
 const createUserSchema = z.object({
   fullName: z.string().min(1),
   email:    z.string().email(),
   password: z.string().min(8),
-  role:     z.nativeEnum(UserRole),
+  role:     z.enum(USER_ROLES),
 });
 
 const updateUserSchema = z.object({
   fullName: z.string().min(1).optional(),
   email:    z.string().email().optional(),
-  role:     z.nativeEnum(UserRole).optional(),
+  role:     z.enum(USER_ROLES).optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },
 );
 
 const listQuerySchema = z.object({
-  role:     z.nativeEnum(UserRole).optional(),
+  role:     z.enum(USER_ROLES).optional(),
   isActive: z.enum(['true', 'false']).optional(),
   search:   z.string().optional(),
 });
