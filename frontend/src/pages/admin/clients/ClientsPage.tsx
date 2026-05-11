@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAllClients, useCreateClient, useUpdateClient } from '../../../services/entities.service';
 import type { Client } from '../../../types/entities';
+import ProjectsSection from './ProjectsSection';
 
 interface NameForm {
   name: string;
@@ -95,10 +96,12 @@ function EditClientForm({ client, onClose }: { client: Client; onClose: () => vo
 }
 
 function ClientAccordion({ client }: { client: Client }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const updateClient = useUpdateClient();
   const isActive = client.status === 'ACTIVE';
+  const showBody = isExpanded || isEditing;
 
   const handleToggleActive = () => {
     if (isActive) {
@@ -111,7 +114,12 @@ function ClientAccordion({ client }: { client: Client }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
       <div className="flex items-center gap-3 p-3">
-        <div className="flex flex-1 items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          className="flex flex-1 items-center gap-3 text-start"
+        >
+          <span className="text-xs text-gray-400">{isExpanded ? '▲' : '▼'}</span>
           <span className="font-medium">{client.name}</span>
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -120,7 +128,7 @@ function ClientAccordion({ client }: { client: Client }) {
           >
             {isActive ? 'פעיל' : 'לא פעיל'}
           </span>
-        </div>
+        </button>
         <button
           type="button"
           onClick={() => setIsEditing((prev) => !prev)}
@@ -172,9 +180,12 @@ function ClientAccordion({ client }: { client: Client }) {
         </div>
       )}
 
-      {isEditing && (
-        <div className="border-t border-gray-200 px-4 py-3">
-          <EditClientForm client={client} onClose={() => setIsEditing(false)} />
+      {showBody && (
+        <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-3">
+          {isEditing && (
+            <EditClientForm client={client} onClose={() => setIsEditing(false)} />
+          )}
+          {isExpanded && <ProjectsSection clientId={client.id} />}
         </div>
       )}
     </div>
