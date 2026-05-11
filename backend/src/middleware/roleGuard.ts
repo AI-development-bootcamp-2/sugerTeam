@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { UserRole } from '@prisma/client';
+import type { UserRole } from '@prisma/client';
 
 export function requireRole(...roles: UserRole[]): RequestHandler {
   if (roles.length === 0) {
