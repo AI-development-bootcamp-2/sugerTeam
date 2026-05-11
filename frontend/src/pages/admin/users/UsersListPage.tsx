@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useUsers, useDeactivateUser, useActivateUser } from '../../../services/users.service';
 import { CreateUserModal } from './CreateUserModal';
 import { EditUserModal } from './EditUserModal';
+import { ROLE_LABELS } from './userConstants';
+import { useAuthStore } from '../../../store/authStore';
+import { UserRole as AuthRole } from '../../../types/auth';
 import type { User, UserRole } from '../../../types/entities';
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  EMPLOYEE: 'עובד',
-  TEAM_LEAD: 'ראש צוות',
-  ADMIN: 'מנהל',
-};
 
 type RoleFilter = UserRole | 'ALL';
 
@@ -122,6 +120,7 @@ function UserRow({ user, onEdit }: UserRowProps) {
 }
 
 export default function UsersListPage() {
+  const authUser = useAuthStore((s) => s.user);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
@@ -148,6 +147,10 @@ export default function UsersListPage() {
     search: debouncedSearch || undefined,
     role: roleFilter === 'ALL' ? undefined : roleFilter,
   });
+
+  if (authUser !== null && authUser.role !== AuthRole.ADMIN) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <main className="mx-auto max-w-4xl p-4" dir="rtl">

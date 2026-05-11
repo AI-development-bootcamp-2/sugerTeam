@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import type { UserRole } from '../../types/auth';
+import { UserRole } from '../../types/auth';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   EMPLOYEE: 'עובד',
@@ -23,6 +23,7 @@ function AbraLogoMark() {
 interface NavItemDef {
   to: string;
   label: string;
+  adminOnly?: boolean;
   icon: React.ReactNode;
 }
 
@@ -31,7 +32,7 @@ const NAV_ITEMS: NavItemDef[] = [
     to: '/admin/clients',
     label: 'ניהול לקוחות/פרויקטים',
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, flexShrink: 0 }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -42,8 +43,9 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/users',
     label: 'ניהול משתמשים',
+    adminOnly: true,
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20, flexShrink: 0 }}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <line x1="19" y1="8" x2="19" y2="14" />
@@ -57,20 +59,13 @@ function NavItem({ item }: { item: NavItemDef }) {
   return (
     <NavLink
       to={item.to}
-      style={({ isActive }) => ({
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '14px 16px',
-        borderRadius: 10,
-        fontSize: 15,
-        fontWeight: 600,
-        color: isActive ? '#fff' : 'rgba(255,255,255,0.75)',
-        background: isActive ? '#1F2A4F' : 'transparent',
-        textDecoration: 'none',
-        transition: 'background .15s ease, color .15s ease',
-        boxShadow: isActive ? '-4px 0 0 0 #F09A37' : 'none',
-      })}
+      className={({ isActive }) =>
+        `flex items-center gap-3 rounded-[10px] px-4 py-3.5 text-[15px] font-semibold no-underline transition-[background,color] duration-150 ${
+          isActive
+            ? 'bg-[#1F2A4F] text-white shadow-[-4px_0_0_0_#F09A37]'
+            : 'text-white/75 hover:text-white'
+        }`
+      }
     >
       {item.icon}
       <span>{item.label}</span>
@@ -80,6 +75,7 @@ function NavItem({ item }: { item: NavItemDef }) {
 
 export function AdminPage() {
   const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   const initials = user?.fullName
     ? user.fullName
@@ -91,97 +87,37 @@ export function AdminPage() {
     : '??';
 
   return (
-    <div
-      dir="rtl"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '280px 1fr',
-        minHeight: '100vh',
-        fontFamily: '"Assistant", -apple-system, "Segoe UI", system-ui, sans-serif',
-      }}
-    >
-      {/* ── Sidebar ── */}
-      <aside
-        style={{
-          background: '#141E3E',
-          color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '28px 20px',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflowY: 'auto',
-        }}
-      >
+    <div dir="rtl" className="grid min-h-screen grid-cols-[280px_1fr] font-sans">
+      {/* Sidebar */}
+      <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto bg-[#141E3E] px-5 py-7 text-white">
         {/* Brand */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            direction: 'ltr',
-            paddingBottom: 28,
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: 12,
-          }}
-        >
+        <div dir="ltr" className="mb-3 flex items-center gap-3 border-b border-white/[0.06] pb-7">
           <AbraLogoMark />
-          <span
-            style={{
-              fontWeight: 800,
-              fontSize: 38,
-              color: '#fff',
-              letterSpacing: -2,
-              lineHeight: 1,
-            }}
-          >
+          <span className="text-[38px] font-extrabold leading-none tracking-[-2px] text-white">
             abra
           </span>
         </div>
 
         {/* Navigation */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {NAV_ITEMS.map((item) => (
+        <nav className="flex flex-col gap-1">
+          {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
             <NavItem key={item.to} item={item} />
           ))}
         </nav>
 
-        <div style={{ flex: 1 }} />
+        <div className="flex-1" />
 
         {/* User card */}
         {user && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '14px 8px 4px',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #F09A37, #EA7693)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                color: '#fff',
-                fontSize: 14,
-                flexShrink: 0,
-              }}
-            >
+          <div className="flex items-center gap-3 border-t border-white/[0.08] px-2 pb-1 pt-3.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F09A37] to-[#EA7693] text-sm font-bold text-white">
               {initials}
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.2 }}>
+              <div className="text-[15px] font-bold leading-tight text-white">
                 {user.fullName}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+              <div className="text-[13px] leading-snug text-white/60">
                 {ROLE_LABELS[user.role]}
               </div>
             </div>
@@ -189,8 +125,8 @@ export function AdminPage() {
         )}
       </aside>
 
-      {/* ── Main content ── */}
-      <main style={{ background: '#F2F2F7', minHeight: '100vh', overflowY: 'auto' }}>
+      {/* Main content */}
+      <main className="min-h-screen overflow-y-auto bg-[#F2F2F7]">
         <Outlet />
       </main>
     </div>

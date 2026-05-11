@@ -4,9 +4,18 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../prisma/client';
 
 export class ConflictError extends Error {
+  status = 409;
   constructor(message: string) {
     super(message);
     this.name = 'ConflictError';
+  }
+}
+
+export class NotFoundError extends Error {
+  status = 404;
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
   }
 }
 
@@ -79,25 +88,35 @@ export async function updateUser(
     const user = await prisma.user.update({ where: { id }, data: updateData });
     return omitHash(user);
   } catch (err) {
-    if ((err as { code?: string }).code === 'P2002') {
-      throw new ConflictError('Email already in use');
-    }
+    const code = (err as { code?: string }).code;
+    if (code === 'P2002') throw new ConflictError('Email already in use');
+    if (code === 'P2025') throw new NotFoundError('User not found');
     throw err;
   }
 }
 
 export async function deactivateUser(id: string): Promise<SafeUser> {
-  const user = await prisma.user.update({
-    where: { id },
-    data: { status: UserStatus.INACTIVE, deletedAt: new Date() },
-  });
-  return omitHash(user);
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.INACTIVE, deletedAt: new Date() },
+    });
+    return omitHash(user);
+  } catch (err) {
+    if ((err as { code?: string }).code === 'P2025') throw new NotFoundError('User not found');
+    throw err;
+  }
 }
 
 export async function activateUser(id: string): Promise<SafeUser> {
-  const user = await prisma.user.update({
-    where: { id },
-    data: { status: UserStatus.ACTIVE, deletedAt: null },
-  });
-  return omitHash(user);
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { status: UserStatus.ACTIVE, deletedAt: null },
+    });
+    return omitHash(user);
+  } catch (err) {
+    if ((err as { code?: string }).code === 'P2025') throw new NotFoundError('User not found');
+    throw err;
+  }
 }

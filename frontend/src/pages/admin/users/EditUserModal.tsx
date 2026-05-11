@@ -3,15 +3,8 @@ import { useForm } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useUpdateUser, useDeactivateUser, useActivateUser } from '../../../services/users.service';
+import { ROLE_LABELS, ALL_ROLES } from './userConstants';
 import type { User, UserRole } from '../../../types/entities';
-
-const ROLE_LABELS: Record<UserRole, string> = {
-  EMPLOYEE: 'עובד',
-  TEAM_LEAD: 'ראש צוות',
-  ADMIN: 'מנהל',
-};
-
-const ALL_ROLES: UserRole[] = ['EMPLOYEE', 'TEAM_LEAD', 'ADMIN'];
 
 const editUserSchema = z.object({
   fullName: z.string().min(1, 'שדה חובה'),
