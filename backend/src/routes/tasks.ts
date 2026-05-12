@@ -46,7 +46,6 @@ const updateTaskSchema = z
 
 router.get(
   '/active',
-  requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD),
   async (req: Request, res: Response, next: NextFunction) => {
     const result = projectIdQuerySchema.safeParse(req.query);
     if (!result.success) {
