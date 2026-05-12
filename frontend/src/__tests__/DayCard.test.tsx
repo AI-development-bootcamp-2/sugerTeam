@@ -105,24 +105,31 @@ function getBody(header: HTMLElement): HTMLElement {
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+//
+// NOTE: After TR-014 (Phase 4), each unlocked card-with-entries renders a
+// "הוספת דיווח +" div[role="button"] inside its body (always in the DOM,
+// maxHeight:0 when collapsed). So screen.getAllByRole('button') returns
+// [cardHeader, addReportFooter, …] for each such card.
+// Headers are at even indices: [0]=card1-header, [2]=card2-header, etc.
 
 describe('DayCard accordion (rendered via DayList)', () => {
   it('expandable card body starts collapsed', () => {
     render(<DayList dayEntries={[workingDay1]} isLocked={false} />);
-    const header = screen.getByRole('button');
+    // buttons[0]=header, buttons[1]=add-report footer
+    const header = screen.getAllByRole('button')[0];
     expect(getBody(header).style.maxHeight).not.toBe('800px');
   });
 
   it('clicking expandable header opens the body', () => {
     render(<DayList dayEntries={[workingDay1]} isLocked={false} />);
-    const header = screen.getByRole('button');
+    const header = screen.getAllByRole('button')[0];
     fireEvent.click(header);
     expect(getBody(header).style.maxHeight).toBe('800px');
   });
 
   it('clicking the same expandable header again collapses it', () => {
     render(<DayList dayEntries={[workingDay1]} isLocked={false} />);
-    const header = screen.getByRole('button');
+    const header = screen.getAllByRole('button')[0];
     fireEvent.click(header);
     expect(getBody(header).style.maxHeight).toBe('800px');
     fireEvent.click(header);
@@ -131,7 +138,10 @@ describe('DayCard accordion (rendered via DayList)', () => {
 
   it('opening a second card collapses the first (single-expand)', () => {
     render(<DayList dayEntries={[workingDay1, workingDay2]} isLocked={false} />);
-    const [header1, header2] = screen.getAllByRole('button');
+    // 4 buttons total: [w1-header, w1-addReport, w2-header, w2-addReport]
+    const buttons = screen.getAllByRole('button');
+    const header1 = buttons[0];
+    const header2 = buttons[2];
     const body1 = getBody(header1);
     const body2 = getBody(header2);
 
@@ -144,25 +154,28 @@ describe('DayCard accordion (rendered via DayList)', () => {
     expect(body1.style.maxHeight).not.toBe('800px');
   });
 
-  it('non-interactive cards (weekend, missing, vacation) have no button role', () => {
+  it('weekend day has no button role; missing/vacation days have interactive CTA (TR-014)', () => {
     render(
       <DayList
         dayEntries={[workingDay1, weekendDay, missingDay, vacationDay]}
         isLocked={false}
       />,
     );
-    // Only workingDay1 has entries and is interactive
+    // workingDay1:  header + add-report footer       = 2
+    // weekendDay:   isWorkingDay=false → canAddReport=false → 0
+    // missingDay:   header + empty-state CTA          = 2
+    // vacationDay:  header + empty-state CTA          = 2
     const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(1);
+    expect(buttons).toHaveLength(6);
   });
 
   it('clicking non-interactive card (weekend) does not expand any body', () => {
     render(<DayList dayEntries={[weekendDay, workingDay1]} isLocked={false} />);
-    // Find weekend card date label and click it
     const weekendText = screen.getByText(/שבת/);
     fireEvent.click(weekendText);
-    // workingDay1 header is still collapsed (it was not clicked)
-    const header1 = screen.getByRole('button');
+    // workingDay1 header is still collapsed (was not clicked)
+    // buttons: [workingDay1-header, workingDay1-addReport]
+    const header1 = screen.getAllByRole('button')[0];
     expect(getBody(header1).style.maxHeight).not.toBe('800px');
   });
 

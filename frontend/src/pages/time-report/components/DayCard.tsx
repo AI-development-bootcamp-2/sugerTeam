@@ -8,7 +8,7 @@ interface DayCardProps {
   isExpanded: boolean;
   onToggle: () => void;
   isLocked: boolean;
-  // Future injection point: inline report/absence form replaces the הוספת דיווח placeholder.
+  onOpenReport?: () => void;
   actionSlot?: ReactNode;
 }
 
@@ -60,10 +60,10 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, actionSlot }: DayCardProps) {
-  // T023: today's card is always interactive so an empty-day placeholder renders.
-  const isInteractive = dayEntry.entries.length > 0 || dayEntry.isToday;
-  const showBody = isExpanded && (dayEntry.entries.length > 0 || dayEntry.isToday);
+export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOpenReport, actionSlot }: DayCardProps) {
+  const canAddReport = dayEntry.isWorkingDay && !dayEntry.isFuture && !isLocked;
+  const isInteractive = dayEntry.entries.length > 0 || canAddReport;
+  const showBody = isExpanded && (dayEntry.entries.length > 0 || canAddReport);
 
   return (
     <div>
@@ -85,7 +85,7 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, acti
           border: '1px solid #ECECEC',
           borderRadius: showBody ? '12px 12px 0 0' : 12,
           display: 'flex',
-          flexDirection: 'row-reverse',
+          flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '0 16px',
@@ -93,7 +93,7 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, acti
           userSelect: 'none',
         }}
       >
-        {/* Right group — RTL start (briefcase + date) */}
+        {/* Right group — RTL start (briefcase + date + status tag) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
             style={{
@@ -112,16 +112,16 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, acti
           <span style={{ fontSize: 20, fontWeight: 700, color: '#212525' }}>
             {formatDate(dayEntry.date, dayEntry.dayOfWeek)}
           </span>
-        </div>
-
-        {/* Left group — RTL end (StatusTag + chevron) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {dayEntry.displayStatus && (
             <StatusTag
               status={dayEntry.displayStatus}
               reportedMinutes={dayEntry.reportedMinutes}
             />
           )}
+        </div>
+
+        {/* Left group — RTL end (chevron only) */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           {isInteractive && <ChevronIcon expanded={isExpanded} />}
         </div>
       </div>
@@ -138,19 +138,42 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, acti
           borderRadius: '0 0 12px 12px',
         }}
       >
-        {/* ── T023: empty state ──────────────────────────────────────────── */}
+        {/* ── TR-014: empty state — CTA for missing working days ────────────── */}
         {dayEntry.entries.length === 0 && (
-          <p
-            style={{
-              margin: 0,
-              padding: '24px 16px',
-              fontSize: 16,
-              color: '#848891',
-              textAlign: 'center',
-            }}
-          >
-            לא נמצאו דיווחים ליום זה
-          </p>
+          canAddReport ? (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); onOpenReport?.(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onOpenReport?.(); } }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                padding: '28px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: 15, color: '#848891' }}>אין דיווח ליום זה</span>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: '#0C69FF',
+                  border: '1.5px dashed #0C69FF',
+                  borderRadius: 8,
+                  padding: '8px 20px',
+                }}
+              >
+                + הוסף רשומה
+              </span>
+            </div>
+          ) : (
+            <p style={{ margin: 0, padding: '24px 16px', fontSize: 16, color: '#848891', textAlign: 'center' }}>
+              לא נמצאו דיווחים ליום זה
+            </p>
+          )
         )}
 
         {/* ── T022: segment list ──────────────────────────────────────────── */}
@@ -163,9 +186,13 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, acti
           />
         ))}
 
-        {/* ── T022: add-report placeholder — hidden when locked ────────────── */}
-        {!isLocked && (
+        {/* ── Add-report button — only shown when there are existing entries ── */}
+        {!isLocked && dayEntry.entries.length > 0 && (
           <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onOpenReport?.(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onOpenReport?.(); } }}
             style={{
               textAlign: 'center',
               padding: '18px 0',
