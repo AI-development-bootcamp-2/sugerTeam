@@ -10,6 +10,7 @@ import {
   useUploadDocument,
 } from '../../../services/absences.service';
 import { useAuthStore } from '../../../store/authStore';
+import { WorkReportTab } from './WorkReportTab';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -99,6 +100,7 @@ interface AbsenceFormCardProps {
 }
 
 export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps) {
+  const [activeTab, setActiveTab] = useState<'absence' | 'work'>('absence');
   const userId = useAuthStore((s) => s.user?.id);
   const today = todayIso();
 
@@ -182,14 +184,20 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
     }
   });
 
+  const outerClassName = flush
+    ? 'relative flex h-full w-full flex-col overflow-hidden bg-[#f2f2f7]'
+    : 'relative flex h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]';
+
+  if (activeTab === 'work') {
+    return (
+      <div className={outerClassName}>
+        <WorkReportTab onSwitchToAbsence={() => setActiveTab('absence')} onClose={onClose} />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={
-        flush
-          ? 'relative flex h-full w-full flex-col overflow-hidden bg-[#f2f2f7]'
-          : 'relative flex h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]'
-      }
-    >
+    <div className={outerClassName}>
       <header className="flex items-center justify-between px-5 pt-[18px] pb-[14px]">
         <h1 className="text-[18px] font-bold tracking-tight text-[#1a2233]">דיווח ידני</h1>
         <button
@@ -218,9 +226,7 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
               type="button"
               aria-selected="false"
               className="h-[38px] rounded-[10px] bg-transparent text-sm font-semibold text-[#7a8092]"
-              onClick={() => {
-                window.location.href = '/time-report';
-              }}
+              onClick={() => setActiveTab('work')}
             >
               דיווח עבודה
             </button>

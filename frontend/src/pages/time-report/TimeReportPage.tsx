@@ -98,7 +98,6 @@ export default function TimeReportPage() {
     setSelectedDate(null);
   }
 
-
   function handleLogout() {
     clearAuth();
     void navigate('/login');
