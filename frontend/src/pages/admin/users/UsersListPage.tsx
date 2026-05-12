@@ -153,7 +153,7 @@ export default function UsersListPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl p-4" dir="rtl">
+    <main className="p-6" dir="rtl">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">משתמשים</h1>
         <button
@@ -200,15 +200,15 @@ export default function UsersListPage() {
       ) : !users?.length ? (
         <p className="py-8 text-center text-sm text-gray-500">לא נמצאו משתמשים</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-right">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">שם מלא</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">דוא״ל</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">תפקיד</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">סטטוס</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">פעולות</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם מלא</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">דוא״ל</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תפקיד</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>

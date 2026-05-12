@@ -331,15 +331,15 @@ export default function ProjectsPage() {
       {!isLoading && projects && projects.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">לקוח</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם פרויקט</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">מנהל ראשי</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">התחלה</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סיום</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פעולות</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">לקוח</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם פרויקט</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">מנהל ראשי</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">התחלה</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סיום</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>
