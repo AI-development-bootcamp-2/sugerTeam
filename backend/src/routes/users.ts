@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-//import type { UserRole } from '@prisma/client';
 import { authenticateToken } from '@/middleware/auth';
 import { requireRole } from '@/middleware/roleGuard';
 import {
@@ -11,6 +10,7 @@ import {
   deactivateUser,
   activateUser,
   ConflictError,
+  NotFoundError,
 } from '@/services/user.service';
 
 const router = Router();
@@ -101,14 +101,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const user = await updateUser(id, result.data);
     res.status(200).json(user);
   } catch (err) {
-    if (err instanceof ConflictError) {
-      res.status(409).json({ error: err.message });
-      return;
-    }
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof ConflictError) { res.status(409).json({ error: err.message }); return; }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });
@@ -119,10 +113,7 @@ router.patch('/:id/deactivate', async (req: Request, res: Response, next: NextFu
     const user = await deactivateUser(id);
     res.status(200).json(user);
   } catch (err) {
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });
@@ -133,10 +124,7 @@ router.patch('/:id/activate', async (req: Request, res: Response, next: NextFunc
     const user = await activateUser(id);
     res.status(200).json(user);
   } catch (err) {
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });
