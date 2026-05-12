@@ -17,17 +17,19 @@ function formatDate(dateStr: string | null): string {
 }
 
 interface CreateTaskFormData {
-  clientId: string;
-  projectId: string;
-  name: string;
-  startDate: string;
-  endDate: string;
+  clientId:    string;
+  projectId:   string;
+  name:        string;
+  description: string;
+  startDate:   string;
+  endDate:     string;
 }
 
 interface EditTaskFormData {
-  name: string;
-  startDate: string;
-  endDate: string;
+  name:        string;
+  description: string;
+  startDate:   string;
+  endDate:     string;
 }
 
 function CreateTaskModal({
@@ -50,14 +52,14 @@ function CreateTaskModal({
     setValue,
     formState: { errors },
   } = useForm<CreateTaskFormData>({
-    defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' },
+    defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', description: '', startDate: '', endDate: '' },
   });
   const watchedClientId = useWatch({ control, name: 'clientId' });
   const { data: projects } = useProjectsByClient(watchedClientId || undefined);
   const createTask = useCreateTask();
 
   useEffect(() => {
-    if (isOpen) reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' });
+    if (isOpen) reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', description: '', startDate: '', endDate: '' });
   }, [isOpen, defaultClientId, defaultProjectId, reset]);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ function CreateTaskModal({
   }, [projects, isOpen, defaultProjectId, setValue]);
 
   const handleClose = () => {
-    reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' });
+    reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', description: '', startDate: '', endDate: '' });
     onClose();
   };
 
@@ -74,7 +76,7 @@ function CreateTaskModal({
       <form
         onSubmit={handleSubmit((data) => {
           createTask.mutate(
-            { projectId: data.projectId, name: data.name, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
+            { projectId: data.projectId, name: data.name, description: data.description || undefined, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
             { onSuccess: handleClose },
           );
         })}
@@ -116,6 +118,13 @@ function CreateTaskModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">תיאור</label>
+          <input
+            {...register('description')}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
@@ -171,9 +180,10 @@ function EditTaskModal({
     formState: { errors },
   } = useForm<EditTaskFormData>({
     defaultValues: {
-      name:      task.name,
-      startDate: task.startDate?.slice(0, 10) ?? '',
-      endDate:   task.endDate?.slice(0, 10)   ?? '',
+      name:        task.name,
+      description: task.description ?? '',
+      startDate:   task.startDate?.slice(0, 10) ?? '',
+      endDate:     task.endDate?.slice(0, 10)   ?? '',
     },
   });
   const updateTask = useUpdateTask();
@@ -182,7 +192,7 @@ function EditTaskModal({
     <Modal isOpen={isOpen} onClose={onClose} title="עריכת משימה">
       <form
         onSubmit={handleSubmit((data) => {
-          updateTask.mutate({ id: task.id, name: data.name, startDate: data.startDate || null, endDate: data.endDate || null }, { onSuccess: onClose });
+          updateTask.mutate({ id: task.id, name: data.name, description: data.description || undefined, startDate: data.startDate || null, endDate: data.endDate || null }, { onSuccess: onClose });
         })}
         className="flex flex-col gap-4"
       >
@@ -193,6 +203,13 @@ function EditTaskModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">תיאור</label>
+          <input
+            {...register('description')}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">

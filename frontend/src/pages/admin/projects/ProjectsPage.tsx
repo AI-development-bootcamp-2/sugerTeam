@@ -17,17 +17,19 @@ function formatDate(dateStr: string | null): string {
 }
 
 interface CreateProjectForm {
-  clientId: string;
-  name: string;
-  startDate: string;
-  endDate: string;
+  clientId:    string;
+  name:        string;
+  description: string;
+  startDate:   string;
+  endDate:     string;
 }
 
 interface EditProjectForm {
-  name: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  startDate: string;
-  endDate: string;
+  name:        string;
+  description: string;
+  status:      'ACTIVE' | 'INACTIVE';
+  startDate:   string;
+  endDate:     string;
 }
 
 function CreateProjectModal({
@@ -45,15 +47,15 @@ function CreateProjectModal({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateProjectForm>({ defaultValues: { clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' } });
+  } = useForm<CreateProjectForm>({ defaultValues: { clientId: defaultClientId ?? '', name: '', description: '', startDate: '', endDate: '' } });
   const createProject = useCreateProject();
 
   useEffect(() => {
-    if (isOpen) reset({ clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' });
+    if (isOpen) reset({ clientId: defaultClientId ?? '', name: '', description: '', startDate: '', endDate: '' });
   }, [isOpen, defaultClientId, reset]);
 
   const handleClose = () => {
-    reset({ clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' });
+    reset({ clientId: defaultClientId ?? '', name: '', description: '', startDate: '', endDate: '' });
     onClose();
   };
 
@@ -62,7 +64,7 @@ function CreateProjectModal({
       <form
         onSubmit={handleSubmit((data) => {
           createProject.mutate(
-            { clientId: data.clientId, name: data.name, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
+            { clientId: data.clientId, name: data.name, description: data.description || undefined, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
             { onSuccess: handleClose },
           );
         })}
@@ -90,6 +92,13 @@ function CreateProjectModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">תיאור</label>
+          <input
+            {...register('description')}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
@@ -145,10 +154,11 @@ function EditProjectModal({
     formState: { errors },
   } = useForm<EditProjectForm>({
     defaultValues: {
-      name:      project.name,
-      status:    project.status,
-      startDate: project.startDate?.slice(0, 10) ?? '',
-      endDate:   project.endDate?.slice(0, 10)   ?? '',
+      name:        project.name,
+      description: project.description ?? '',
+      status:      project.status,
+      startDate:   project.startDate?.slice(0, 10) ?? '',
+      endDate:     project.endDate?.slice(0, 10)   ?? '',
     },
   });
   const updateProject = useUpdateProject();
@@ -158,7 +168,7 @@ function EditProjectModal({
       <form
         onSubmit={handleSubmit((data) => {
           updateProject.mutate(
-            { id: project.id, name: data.name, isActive: data.status === 'ACTIVE', startDate: data.startDate || null, endDate: data.endDate || null },
+            { id: project.id, name: data.name, description: data.description || undefined, isActive: data.status === 'ACTIVE', startDate: data.startDate || null, endDate: data.endDate || null },
             { onSuccess: onClose },
           );
         })}
@@ -171,6 +181,13 @@ function EditProjectModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">תיאור</label>
+          <input
+            {...register('description')}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">סטטוס</label>

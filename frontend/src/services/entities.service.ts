@@ -65,7 +65,7 @@ export function useActiveProjects(clientId: string | undefined) {
 export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { clientId: string; name: string; startDate?: string; endDate?: string }) => {
+    mutationFn: async (payload: { clientId: string; name: string; description?: string; startDate?: string; endDate?: string }) => {
       const { data } = await apiClient.post<Project>('/api/v1/projects', payload);
       return data;
     },
@@ -79,7 +79,7 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; description?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null }) => {
       const { data } = await apiClient.patch<Project>(`/api/v1/projects/${id}`, payload);
       return data;
     },
@@ -154,7 +154,7 @@ export function useActiveTasks(projectId: string | undefined) {
 export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { projectId: string; name: string; startDate?: string; endDate?: string }) => {
+    mutationFn: async (payload: { projectId: string; name: string; description?: string; startDate?: string; endDate?: string }) => {
       const { data } = await apiClient.post<Task>('/api/v1/tasks', payload);
       return data;
     },
@@ -168,7 +168,7 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; name?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; name?: string; description?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null }) => {
       const { data } = await apiClient.patch<Task>(`/api/v1/tasks/${id}`, payload);
       return data;
     },

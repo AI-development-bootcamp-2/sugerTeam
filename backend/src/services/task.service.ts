@@ -10,18 +10,19 @@ export class NotFoundError extends Error {
   }
 }
 
-export async function createTask(data: { projectId: string; name: string; startDate?: string; endDate?: string }): Promise<Task> {
+export async function createTask(data: { projectId: string; name: string; description?: string; startDate?: string; endDate?: string }): Promise<Task> {
   const project = await prisma.project.findUnique({ where: { id: data.projectId } });
   if (!project) {
     throw new NotFoundError(`Project ${data.projectId} not found`);
   }
   return prisma.task.create({
     data: {
-      projectId: data.projectId,
-      name:      data.name,
-      status:    TaskStatus.OPEN,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate:   data.endDate   ? new Date(data.endDate)   : undefined,
+      projectId:   data.projectId,
+      name:        data.name,
+      description: data.description,
+      status:      TaskStatus.OPEN,
+      startDate:   data.startDate ? new Date(data.startDate) : undefined,
+      endDate:     data.endDate   ? new Date(data.endDate)   : undefined,
     },
   });
 }
@@ -45,11 +46,12 @@ export async function listAllTasks(): Promise<Task[]> {
 
 export async function updateTask(
   id: string,
-  data: { name?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null },
+  data: { name?: string; description?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null },
 ): Promise<Task> {
   const updateData: Prisma.TaskUpdateInput = {};
 
-  if (data.name      !== undefined) updateData.name      = data.name;
+  if (data.name        !== undefined) updateData.name        = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
   if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
   if (data.endDate   !== undefined) updateData.endDate   = data.endDate   ? new Date(data.endDate)   : null;
   if (data.isActive === false) {
