@@ -97,7 +97,8 @@ export type DayStatus =
   | 'missing'    // past working day, no entries reported
   | 'weekend'    // Friday or Saturday (dayType WEEKEND)
   | 'holiday'    // public holiday (dayType HOLIDAY) — auto non-working, no action needed
-  | 'vacation';  // covered by an AbsenceReport of type VACATION
+  | 'vacation'   // covered by an AbsenceReport of type VACATION
+  | 'irregular'; // partial hours (< standard but > 0) — rule not yet active in deriveDayStatus
 
 export interface DayEntry {
   date: string;                    // YYYY-MM-DD

@@ -1,6 +1,15 @@
 import { createBrowserRouter } from 'react-router-dom';
+import TimeReportPage from './pages/time-report/TimeReportPage';
 
-// Stub — T019 replaces this with full route definitions
-const router = createBrowserRouter([]);
+const router = createBrowserRouter([
+  {
+    path: '/dashboard',
+    element: <TimeReportPage />,
+  },
+  {
+    path: '/',
+    element: <TimeReportPage />,
+  },
+]);
 
 export default router;

@@ -34,9 +34,12 @@ export function getMonthLock(year: number, month: number): Promise<MonthLockDto>
 /**
  * Fetch absence records for the given user and month.
  *
- * Used to derive the `vacation` day status. This call is treated as optional:
- * if the endpoint is unavailable or returns an error, the rest of the page
- * continues to function and affected days degrade from `vacation` to `missing`.
+ * Response shape: `AbsenceDto[]` — each record includes `startDate`, `endDate`,
+ * `absenceType`, and `calculatedAbsenceDays` (Fri/Sat excluded).
+ *
+ * This call is treated as optional: if the endpoint is unavailable or returns
+ * an error, the page continues to function and days that would have shown
+ * `vacation` status degrade to `missing` instead.
  *
  * Endpoint: GET /api/v1/absences?userId=&year=&month=
  */

@@ -53,6 +53,8 @@ function deriveDayStatus(
 // Expands every AbsenceReport date range into individual date strings so each
 // day can do a single O(1) lookup. Overlapping absences: last entry wins
 // (acceptable for v1 — overlapping absences are a data-quality issue).
+// When AbsenceReport integration is complete, replace this with actual absence
+// duration for absenceMinutes in computeMonthSummary.
 
 function buildAbsenceMap(absences: AbsenceDto[]): Map<string, AbsenceType> {
   const map = new Map<string, AbsenceType>();
@@ -88,7 +90,8 @@ export function buildDayEntries(
   // If workCalendarDays is empty the month cannot be determined — return [].
   if (workCalendarDays.length === 0) return [];
 
-  const referenceDate = workCalendarDays[0].date; // YYYY-MM-DD
+  const referenceDate = workCalendarDays[0]?.date; // YYYY-MM-DD
+  if (!referenceDate) return [];
   const year = parseInt(referenceDate.slice(0, 4), 10);
   const month = parseInt(referenceDate.slice(5, 7), 10); // 1-indexed
   const daysInMonth = new Date(year, month, 0).getDate(); // month+1, day 0 trick

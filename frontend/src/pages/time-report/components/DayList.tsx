@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { DayEntry } from '../../../types/time-report';
+import DayCard from './DayCard';
 
-// ─── T009 — Expanded card state ───────────────────────────────────────────────
-// expandedDate: the single card that is currently open (null = all collapsed).
-// Initialized to today so the current day opens by default if present in the list.
+interface DayListProps {
+  dayEntries: DayEntry[];
+  isLocked: boolean;
+}
 
 function todayStr(): string {
   const d = new Date();
@@ -13,23 +15,28 @@ function todayStr(): string {
   return `${y}-${m}-${day}`;
 }
 
-interface DayListProps {
-  dayEntries: DayEntry[];
-  isLocked: boolean;
-}
-
 export default function DayList({ dayEntries, isLocked }: DayListProps) {
+  // T009 — single-expand: null = all collapsed; a date string = that card is open.
+  // Initialised to today so the current day's card opens by default.
   const [expandedDate, setExpandedDate] = useState<string | null>(todayStr);
 
   function toggleExpanded(date: string) {
     setExpandedDate((current) => (current === date ? null : date));
   }
 
-  // Phase 4 (T019) will render DayCard components here.
-  void dayEntries;
-  void isLocked;
-  void expandedDate;
-  void toggleExpanded;
+  if (dayEntries.length === 0) return null;
 
-  return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {dayEntries.map((entry) => (
+        <DayCard
+          key={entry.date}
+          dayEntry={entry}
+          isExpanded={expandedDate === entry.date}
+          onToggle={() => toggleExpanded(entry.date)}
+          isLocked={isLocked}
+        />
+      ))}
+    </div>
+  );
 }

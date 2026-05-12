@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useTimeReportData } from './hooks/useTimeReportData';
@@ -6,8 +6,9 @@ import AppHeader from './components/AppHeader';
 import MonthPager from './components/MonthPager';
 import KpiStrip from './components/KpiStrip';
 import DayList from './components/DayList';
+import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
-// LockedMonthBanner — added in Phase 7 (T028)
+import LockedMonthBanner from './components/LockedMonthBanner';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -80,8 +81,16 @@ export default function TimeReportPage() {
     isLocked,
     isLoading,
     isError,
+    hasAbsenceError,
     refetch,
   } = useTimeReportData(user?.id ?? '', selectedYear, selectedMonth);
+
+  // T034 — dismissible absence-error banner; resets whenever a new absence error appears.
+  const [absenceBannerDismissed, setAbsenceBannerDismissed] = useState(false);
+  const dismissAbsenceBanner = useCallback(() => setAbsenceBannerDismissed(true), []);
+  useEffect(() => {
+    if (hasAbsenceError) setAbsenceBannerDismissed(false);
+  }, [hasAbsenceError]);
 
   function handleLogout() {
     clearAuth();
@@ -159,19 +168,40 @@ export default function TimeReportPage() {
               gap: 16,
             }}
           >
-            {/* LockedMonthBanner — Phase 7 (T028) */}
-            {isLocked && (
+            <LockedMonthBanner isLocked={isLocked} />
+
+            {/* T034 — Partial failure: absence data degradation banner */}
+            {hasAbsenceError && !absenceBannerDismissed && (
               <div
                 style={{
-                  background: '#FCE3D6',
+                  background: '#FFF6DB',
                   borderRadius: 8,
-                  padding: '12px 24px',
-                  color: '#E7000B',
-                  fontSize: 16,
-                  fontWeight: 600,
+                  padding: '10px 16px',
+                  display: 'flex',
+                  flexDirection: 'row-reverse',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: 14,
+                  color: '#B8860B',
                 }}
               >
-                חודש נעול — לא ניתן לערוך דיווחים
+                <span>חלק מהנתונים לא נטענו — מידע על היעדרויות אינו זמין</span>
+                <button
+                  type="button"
+                  onClick={dismissAbsenceBanner}
+                  aria-label="סגור"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    color: '#B8860B',
+                    lineHeight: 1,
+                    padding: '0 4px',
+                  }}
+                >
+                  ×
+                </button>
               </div>
             )}
 
@@ -225,8 +255,12 @@ export default function TimeReportPage() {
               onOpen={openDrawer}
             />
 
-            {/* Day list */}
-            <DayList dayEntries={dayEntries} isLocked={isLocked} />
+            {/* T031 — Day list or skeleton while loading */}
+            {isLoading ? (
+              <DayCardSkeleton />
+            ) : (
+              <DayList dayEntries={dayEntries} isLocked={isLocked} />
+            )}
           </div>
         )}
       </main>
