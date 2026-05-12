@@ -9,8 +9,10 @@ import tasksRouter from './routes/tasks';
 
 const app = express();
 
+const corsOptions = { origin: process.env.CLIENT_URL, credentials: true };
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 
 app.use('/api/v1/auth', authRouter);
