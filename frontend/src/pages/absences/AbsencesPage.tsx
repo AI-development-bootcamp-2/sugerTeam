@@ -1,3 +1,5 @@
+import { AbsenceFormPage } from './AbsenceFormPage';
+
 export function AbsencesPage() {
-  return <main>היעדרויות</main>;
+  return <AbsenceFormPage />;
 }
