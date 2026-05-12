@@ -10,6 +10,7 @@ import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
 import LockedMonthBanner from './components/LockedMonthBanner';
 import DailyReportDrawer from './components/DailyReportDrawer';
+import { AbsenceFormDrawer } from '../absences/components/AbsenceFormDrawer';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -74,6 +75,7 @@ export default function TimeReportPage() {
   const { selectedYear, selectedMonth, handlePrevMonth, handleNextMonth } =
     useMonthNavigation();
   const { drawerOpen, openDrawer, closeDrawer } = useDrawer();
+  const [absenceDrawerOpen, setAbsenceDrawerOpen] = useState(false);
 
   const {
     dayEntries,
@@ -104,7 +106,7 @@ export default function TimeReportPage() {
 
   return (
     <>
-      <AppHeader onLogout={handleLogout} />
+      <AppHeader onLogout={handleLogout} onAddDay={() => setAbsenceDrawerOpen(true)} />
 
       <main
         dir="rtl"
@@ -259,6 +261,11 @@ export default function TimeReportPage() {
         summary={monthlySummary}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+      />
+
+      <AbsenceFormDrawer
+        open={absenceDrawerOpen}
+        onClose={() => setAbsenceDrawerOpen(false)}
       />
     </>
   );
