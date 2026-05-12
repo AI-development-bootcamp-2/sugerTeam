@@ -45,6 +45,7 @@ export interface Manager {
 
 export interface ProjectWithRelations extends Project {
   primaryManager: Manager | null;
+  client: { id: string; name: string };
 }
 
 export interface Task {
@@ -61,4 +62,6 @@ export interface Task {
   deletedAt: string | null;
 }
 
-export type TaskWithRelations = Task;
+export interface TaskWithProject extends Task {
+  project: { id: string; name: string; client: { id: string; name: string } };
+}

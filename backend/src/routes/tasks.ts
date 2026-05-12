@@ -9,6 +9,7 @@ import {
   listTasksByProject,
   updateTask,
   NotFoundError,
+  type TaskWithProject,
 } from '@/services/task.service';
 
 const router = Router();
@@ -17,6 +18,10 @@ router.use(authenticateToken);
 
 const projectIdQuerySchema = z.object({
   projectId: z.string().uuid(),
+});
+
+const optionalProjectIdSchema = z.object({
+  projectId: z.string().uuid().optional(),
 });
 
 const createTaskSchema = z.object({
@@ -55,13 +60,13 @@ router.get(
   '/',
   requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD),
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = projectIdQuerySchema.safeParse(req.query);
+    const result = optionalProjectIdSchema.safeParse(req.query);
     if (!result.success) {
       res.status(400).json({ error: result.error.format() });
       return;
     }
     try {
-      const tasks = await listTasksByProject(result.data.projectId);
+      const tasks: TaskWithProject[] = await listTasksByProject(result.data.projectId);
       res.status(200).json(tasks);
     } catch (err) {
       next(err);

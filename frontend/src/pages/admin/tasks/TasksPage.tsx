@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import {
   useAllClients,
   useProjectsByClient,
-  useTasksByProject,
+  useAllTasksWithProject,
   useCreateTask,
   useUpdateTask,
 } from '../../../services/entities.service';
-import type { Task } from '../../../types/entities';
+import type { TaskWithProject } from '../../../types/entities';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
@@ -122,7 +122,7 @@ function EditTaskModal({
   isOpen,
   onClose,
 }: {
-  task: Task;
+  task: TaskWithProject;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -170,7 +170,7 @@ function EditTaskModal({
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task }: { task: TaskWithProject }) {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const updateTask = useUpdateTask();
@@ -179,6 +179,8 @@ function TaskRow({ task }: { task: Task }) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
+        <td className="px-4 py-3 text-sm text-gray-500">{task.project.client.name}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">{task.project.name}</td>
         <td className="px-4 py-3 text-sm font-medium">{task.name}</td>
         <td className="px-4 py-3">
           <span
@@ -242,7 +244,14 @@ export default function TasksPage() {
 
   const { data: clients } = useAllClients();
   const { data: projects } = useProjectsByClient(selectedClientId);
-  const { data: tasks, isLoading } = useTasksByProject(selectedProjectId);
+  const { data: tasks, isLoading } = useAllTasksWithProject(selectedProjectId);
+
+  const visibleTasks = useMemo(() => {
+    if (!tasks) return undefined;
+    if (selectedProjectId) return tasks;
+    if (selectedClientId) return tasks.filter((t) => t.project.client.id === selectedClientId);
+    return tasks;
+  }, [tasks, selectedClientId, selectedProjectId]);
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId || undefined);
@@ -268,7 +277,7 @@ export default function TasksPage() {
           onChange={(e) => handleClientChange(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">— בחר לקוח —</option>
+          <option value="">— כל הלקוחות —</option>
           {clients?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -282,7 +291,7 @@ export default function TasksPage() {
           disabled={!selectedClientId}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          <option value="">— בחר פרויקט —</option>
+          <option value="">— כל הפרויקטים —</option>
           {projects?.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -291,20 +300,22 @@ export default function TasksPage() {
         </select>
       </div>
 
-      {selectedProjectId && isLoading && <p className="text-gray-500">טוען...</p>}
+      {isLoading && <p className="text-gray-500">טוען...</p>}
 
-      {selectedProjectId && tasks && tasks.length > 0 && (
+      {!isLoading && visibleTasks && visibleTasks.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">לקוח</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פרויקט</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם משימה</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פעולות</th>
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task) => (
+              {visibleTasks.map((task) => (
                 <TaskRow key={task.id} task={task} />
               ))}
             </tbody>
@@ -312,8 +323,8 @@ export default function TasksPage() {
         </div>
       )}
 
-      {selectedProjectId && tasks && tasks.length === 0 && (
-        <p className="text-gray-500">אין משימות עבור פרויקט זה</p>
+      {!isLoading && visibleTasks && visibleTasks.length === 0 && (
+        <p className="text-gray-500">אין משימות</p>
       )}
 
       <CreateTaskModal

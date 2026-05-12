@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import {
   useAllClients,
   useProjectsByClient,
+  useAllProjects,
   useCreateProject,
   useUpdateProject,
 } from '../../../services/entities.service';
@@ -172,6 +173,7 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
+        <td className="px-4 py-3 text-sm text-gray-500">{project.client.name}</td>
         <td className="px-4 py-3 text-sm font-medium">{project.name}</td>
         <td className="px-4 py-3 text-sm text-gray-500">
           {project.primaryManager?.fullName ?? '—'}
@@ -235,7 +237,7 @@ export default function ProjectsPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined);
   const [createOpen, setCreateOpen] = useState(false);
   const { data: clients } = useAllClients();
-  const { data: projects, isLoading } = useProjectsByClient(selectedClientId);
+  const { data: projects, isLoading } = useAllProjects(selectedClientId);
 
   return (
     <div dir="rtl" className="p-6">
@@ -256,7 +258,7 @@ export default function ProjectsPage() {
           onChange={(e) => setSelectedClientId(e.target.value || undefined)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">— בחר לקוח —</option>
+          <option value="">— כל הלקוחות —</option>
           {clients?.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -265,13 +267,14 @@ export default function ProjectsPage() {
         </select>
       </div>
 
-      {selectedClientId && isLoading && <p className="text-gray-500">טוען...</p>}
+      {isLoading && <p className="text-gray-500">טוען...</p>}
 
-      {selectedClientId && projects && projects.length > 0 && (
+      {!isLoading && projects && projects.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">לקוח</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם פרויקט</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">מנהל ראשי</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
@@ -287,8 +290,8 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {selectedClientId && projects && projects.length === 0 && (
-        <p className="text-gray-500">אין פרויקטים עבור לקוח זה</p>
+      {!isLoading && projects && projects.length === 0 && (
+        <p className="text-gray-500">אין פרויקטים</p>
       )}
 
       <CreateProjectModal

@@ -61,9 +61,18 @@ export async function updateTask(
   return prisma.task.update({ where: { id }, data: updateData });
 }
 
-export async function listTasksByProject(projectId: string): Promise<Task[]> {
+export type TaskWithProject = Task & {
+  project: { id: string; name: string; client: { id: string; name: string } };
+};
+
+export async function listTasksByProject(projectId?: string): Promise<TaskWithProject[]> {
   return prisma.task.findMany({
-    where: { projectId },
+    where: projectId ? { projectId } : undefined,
+    include: {
+      project: {
+        select: { id: true, name: true, client: { select: { id: true, name: true } } },
+      },
+    },
     orderBy: { name: 'asc' },
   });
 }

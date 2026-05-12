@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './api';
-import type { Client, Project, ProjectWithRelations, Task } from '../types/entities';
+import type { Client, Project, ProjectWithRelations, Task, TaskWithProject } from '../types/entities';
 
 export function useActiveClients() {
   return useQuery({
@@ -102,6 +102,17 @@ export function useProjectsByClient(clientId: string | undefined) {
   });
 }
 
+export function useAllProjects(clientId?: string) {
+  return useQuery({
+    queryKey: ['projects', 'all', clientId ?? null],
+    queryFn: async () => {
+      const params = clientId ? { clientId } : {};
+      const { data } = await apiClient.get<ProjectWithRelations[]>('/api/v1/projects', { params });
+      return data;
+    },
+  });
+}
+
 export function useTasksByProject(projectId: string | undefined) {
   return useQuery({
     queryKey: ['tasks', 'byProject', projectId],
@@ -112,6 +123,17 @@ export function useTasksByProject(projectId: string | undefined) {
       return data;
     },
     enabled: projectId !== undefined,
+  });
+}
+
+export function useAllTasksWithProject(projectId?: string) {
+  return useQuery({
+    queryKey: ['tasks', 'all', projectId ?? null],
+    queryFn: async () => {
+      const params = projectId ? { projectId } : {};
+      const { data } = await apiClient.get<TaskWithProject[]>('/api/v1/tasks', { params });
+      return data;
+    },
   });
 }
 

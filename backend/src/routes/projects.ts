@@ -19,6 +19,10 @@ const activeQuerySchema = z.object({
   clientId: z.string().uuid(),
 });
 
+const listQuerySchema = z.object({
+  clientId: z.string().uuid().optional(),
+});
+
 const createProjectSchema = z.object({
   clientId: z.string().uuid(),
   name:     z.string().min(1),
@@ -48,7 +52,7 @@ router.get('/active', async (req: Request, res: Response, next: NextFunction) =>
 });
 
 router.get('/', requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD), async (req: Request, res: Response, next: NextFunction) => {
-  const result = activeQuerySchema.safeParse(req.query);
+  const result = listQuerySchema.safeParse(req.query);
   if (!result.success) {
     res.status(400).json({ error: result.error.format() });
     return;
