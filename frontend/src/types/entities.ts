@@ -16,6 +16,7 @@ export interface User {
 export interface Client {
   id: string;
   name: string;
+  description: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
@@ -26,8 +27,41 @@ export interface Project {
   id: string;
   clientId: string;
   name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  primaryManagerId: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+}
+
+export interface Manager {
+  id: string;
+  fullName: string;
+  role: string;
+}
+
+export interface ProjectWithRelations extends Project {
+  primaryManager: Manager | null;
+  client: { id: string; name: string };
+}
+
+export interface Task {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  status: 'OPEN' | 'CLOSED';
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+  deletedAt: string | null;
+}
+
+export interface TaskWithProject extends Task {
+  project: { id: string; name: string; client: { id: string; name: string } };
 }

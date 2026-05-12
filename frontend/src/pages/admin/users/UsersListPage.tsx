@@ -7,6 +7,7 @@ import { ROLE_LABELS } from './userConstants';
 import { useAuthStore } from '../../../store/authStore';
 import { UserRole as AuthRole } from '../../../types/auth';
 import type { User, UserRole } from '../../../types/entities';
+import Modal from '../../../components/Modal';
 
 type RoleFilter = UserRole | 'ALL';
 
@@ -87,34 +88,32 @@ function UserRow({ user, onEdit }: UserRowProps) {
         </td>
       </tr>
 
-      {confirmAction === 'deactivate' && (
-        <tr className="bg-amber-50">
-          <td colSpan={5} className="px-4 py-3">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-amber-800">האם להשבית משתמש זה? הוא לא יוכל להתחבר למערכת.</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    deactivateUser.mutate(user.id, { onSuccess: () => setConfirmAction(null) });
-                  }}
-                  disabled={deactivateUser.isPending}
-                  className="rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  אישור
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction(null)}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs hover:bg-white"
-                >
-                  ביטול
-                </button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
+      <Modal
+        isOpen={confirmAction === 'deactivate'}
+        onClose={() => setConfirmAction(null)}
+        title="השבתת משתמש"
+      >
+        <p className="mb-5 text-sm text-gray-600">האם להשבית משתמש זה? הוא לא יוכל להתחבר למערכת.</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              deactivateUser.mutate(user.id, { onSuccess: () => setConfirmAction(null) });
+            }}
+            disabled={deactivateUser.isPending}
+            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            אישור
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmAction(null)}
+            className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            ביטול
+          </button>
+        </div>
+      </Modal>
     </>
   );
 }
@@ -153,31 +152,10 @@ export default function UsersListPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl p-4" dir="rtl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">משתמשים</h1>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + משתמש חדש
-        </button>
-      </div>
+    <main className="p-6" dir="rtl">
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">משתמשים</h1>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="חיפוש לפי שם או דוא״ל..."
-          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:max-w-xs"
-        />
-      </div>
-
-      {/* Role filter pills */}
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex items-center gap-3">
         {ROLE_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -192,6 +170,20 @@ export default function UsersListPage() {
             {tab.label}
           </button>
         ))}
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="חיפוש לפי שם או דוא״ל..."
+          className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+        >
+          + יצירה
+        </button>
       </div>
 
       {/* Table */}
@@ -200,15 +192,15 @@ export default function UsersListPage() {
       ) : !users?.length ? (
         <p className="py-8 text-center text-sm text-gray-500">לא נמצאו משתמשים</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-right">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">שם מלא</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">דוא״ל</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">תפקיד</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">סטטוס</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">פעולות</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם מלא</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">דוא״ל</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תפקיד</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>

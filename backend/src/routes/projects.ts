@@ -6,6 +6,7 @@ import { requireRole } from '@/middleware/roleGuard';
 import {
   createProject,
   listActiveProjects,
+  listProjectsByClient,
   updateProject,
   NotFoundError,
 } from '@/services/project.service';
@@ -18,14 +19,24 @@ const activeQuerySchema = z.object({
   clientId: z.string().uuid(),
 });
 
+const listQuerySchema = z.object({
+  clientId: z.string().uuid().optional(),
+});
+
 const createProjectSchema = z.object({
-  clientId: z.string().uuid(),
-  name:     z.string().min(1),
+  clientId:    z.string().uuid(),
+  name:        z.string().min(1),
+  description: z.string().optional(),
+  startDate:   z.string().optional(),
+  endDate:     z.string().optional(),
 });
 
 const updateProjectSchema = z.object({
-  name:     z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
+  name:        z.string().min(1).optional(),
+  description: z.string().optional(),
+  isActive:    z.boolean().optional(),
+  startDate:   z.string().nullable().optional(),
+  endDate:     z.string().nullable().optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },
@@ -41,6 +52,20 @@ router.get('/active', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const projects = await listActiveProjects(result.data.clientId);
     res.status(200).json(projects.map((p) => ({ id: p.id, name: p.name, clientId: p.clientId })));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/', requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD), async (req: Request, res: Response, next: NextFunction) => {
+  const result = listQuerySchema.safeParse(req.query);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.format() });
+    return;
+  }
+  try {
+    const projects = await listProjectsByClient(result.data.clientId);
+    res.status(200).json(projects);
   } catch (err) {
     next(err);
   }
