@@ -11,14 +11,23 @@ import type { TaskWithProject } from '../../../types/entities';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—';
+  return dateStr.slice(0, 10).split('-').reverse().join('/');
+}
+
 interface CreateTaskFormData {
   clientId: string;
   projectId: string;
   name: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface EditTaskFormData {
   name: string;
+  startDate: string;
+  endDate: string;
 }
 
 function CreateTaskModal({
@@ -40,14 +49,14 @@ function CreateTaskModal({
     control,
     formState: { errors },
   } = useForm<CreateTaskFormData>({
-    defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '' },
+    defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' },
   });
   const watchedClientId = useWatch({ control, name: 'clientId' });
   const { data: projects } = useProjectsByClient(watchedClientId || undefined);
   const createTask = useCreateTask();
 
   const handleClose = () => {
-    reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '' });
+    reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' });
     onClose();
   };
 
@@ -55,7 +64,10 @@ function CreateTaskModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="יצירת משימה">
       <form
         onSubmit={handleSubmit((data) => {
-          createTask.mutate({ projectId: data.projectId, name: data.name }, { onSuccess: handleClose });
+          createTask.mutate(
+            { projectId: data.projectId, name: data.name, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
+            { onSuccess: handleClose },
+          );
         })}
         className="flex flex-col gap-4"
       >
@@ -96,6 +108,24 @@ function CreateTaskModal({
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
         </div>
+        <div className="flex gap-3">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך התחלה</label>
+            <input
+              type="date"
+              {...register('startDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך סיום</label>
+            <input
+              type="date"
+              {...register('endDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
         <div className="flex justify-end gap-3">
           <button
             type="button"
@@ -130,14 +160,20 @@ function EditTaskModal({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<EditTaskFormData>({ defaultValues: { name: task.name } });
+  } = useForm<EditTaskFormData>({
+    defaultValues: {
+      name:      task.name,
+      startDate: task.startDate?.slice(0, 10) ?? '',
+      endDate:   task.endDate?.slice(0, 10)   ?? '',
+    },
+  });
   const updateTask = useUpdateTask();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="עריכת משימה">
       <form
         onSubmit={handleSubmit((data) => {
-          updateTask.mutate({ id: task.id, name: data.name }, { onSuccess: onClose });
+          updateTask.mutate({ id: task.id, name: data.name, startDate: data.startDate || null, endDate: data.endDate || null }, { onSuccess: onClose });
         })}
         className="flex flex-col gap-4"
       >
@@ -148,6 +184,24 @@ function EditTaskModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex gap-3">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך התחלה</label>
+            <input
+              type="date"
+              {...register('startDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך סיום</label>
+            <input
+              type="date"
+              {...register('endDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -182,6 +236,8 @@ function TaskRow({ task }: { task: TaskWithProject }) {
         <td className="px-4 py-3 text-sm text-gray-500">{task.project.client.name}</td>
         <td className="px-4 py-3 text-sm text-gray-500">{task.project.name}</td>
         <td className="px-4 py-3 text-sm font-medium">{task.name}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(task.startDate)}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(task.endDate)}</td>
         <td className="px-4 py-3">
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -310,6 +366,8 @@ export default function TasksPage() {
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">לקוח</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פרויקט</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם משימה</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">התחלה</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סיום</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פעולות</th>
               </tr>

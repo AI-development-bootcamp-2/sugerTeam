@@ -11,14 +11,23 @@ import type { ProjectWithRelations } from '../../../types/entities';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—';
+  return dateStr.slice(0, 10).split('-').reverse().join('/');
+}
+
 interface CreateProjectForm {
   clientId: string;
   name: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface EditProjectForm {
   name: string;
   status: 'ACTIVE' | 'INACTIVE';
+  startDate: string;
+  endDate: string;
 }
 
 function CreateProjectModal({
@@ -36,11 +45,11 @@ function CreateProjectModal({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateProjectForm>({ defaultValues: { clientId: defaultClientId ?? '' } });
+  } = useForm<CreateProjectForm>({ defaultValues: { clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' } });
   const createProject = useCreateProject();
 
   const handleClose = () => {
-    reset({ clientId: defaultClientId ?? '' });
+    reset({ clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' });
     onClose();
   };
 
@@ -48,7 +57,10 @@ function CreateProjectModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="יצירת פרויקט">
       <form
         onSubmit={handleSubmit((data) => {
-          createProject.mutate({ clientId: data.clientId, name: data.name }, { onSuccess: handleClose });
+          createProject.mutate(
+            { clientId: data.clientId, name: data.name, startDate: data.startDate || undefined, endDate: data.endDate || undefined },
+            { onSuccess: handleClose },
+          );
         })}
         className="flex flex-col gap-4"
       >
@@ -74,6 +86,24 @@ function CreateProjectModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+        </div>
+        <div className="flex gap-3">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך התחלה</label>
+            <input
+              type="date"
+              {...register('startDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך סיום</label>
+            <input
+              type="date"
+              {...register('endDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -110,7 +140,12 @@ function EditProjectModal({
     handleSubmit,
     formState: { errors },
   } = useForm<EditProjectForm>({
-    defaultValues: { name: project.name, status: project.status },
+    defaultValues: {
+      name:      project.name,
+      status:    project.status,
+      startDate: project.startDate?.slice(0, 10) ?? '',
+      endDate:   project.endDate?.slice(0, 10)   ?? '',
+    },
   });
   const updateProject = useUpdateProject();
 
@@ -119,7 +154,7 @@ function EditProjectModal({
       <form
         onSubmit={handleSubmit((data) => {
           updateProject.mutate(
-            { id: project.id, name: data.name, isActive: data.status === 'ACTIVE' },
+            { id: project.id, name: data.name, isActive: data.status === 'ACTIVE', startDate: data.startDate || null, endDate: data.endDate || null },
             { onSuccess: onClose },
           );
         })}
@@ -142,6 +177,24 @@ function EditProjectModal({
             <option value="ACTIVE">פעיל</option>
             <option value="INACTIVE">לא פעיל</option>
           </select>
+        </div>
+        <div className="flex gap-3">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך התחלה</label>
+            <input
+              type="date"
+              {...register('startDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="text-sm font-medium">תאריך סיום</label>
+            <input
+              type="date"
+              {...register('endDate')}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -178,6 +231,8 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
         <td className="px-4 py-3 text-sm text-gray-500">
           {project.primaryManager?.fullName ?? '—'}
         </td>
+        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(project.startDate)}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(project.endDate)}</td>
         <td className="px-4 py-3">
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -277,6 +332,8 @@ export default function ProjectsPage() {
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">לקוח</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם פרויקט</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">מנהל ראשי</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">התחלה</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סיום</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פעולות</th>
               </tr>

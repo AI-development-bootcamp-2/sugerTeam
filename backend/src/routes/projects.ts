@@ -24,13 +24,17 @@ const listQuerySchema = z.object({
 });
 
 const createProjectSchema = z.object({
-  clientId: z.string().uuid(),
-  name:     z.string().min(1),
+  clientId:  z.string().uuid(),
+  name:      z.string().min(1),
+  startDate: z.string().optional(),
+  endDate:   z.string().optional(),
 });
 
 const updateProjectSchema = z.object({
-  name:     z.string().min(1).optional(),
-  isActive: z.boolean().optional(),
+  name:      z.string().min(1).optional(),
+  isActive:  z.boolean().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate:   z.string().nullable().optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },

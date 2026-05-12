@@ -10,7 +10,7 @@ export class NotFoundError extends Error {
   }
 }
 
-export async function createTask(data: { projectId: string; name: string }): Promise<Task> {
+export async function createTask(data: { projectId: string; name: string; startDate?: string; endDate?: string }): Promise<Task> {
   const project = await prisma.project.findUnique({ where: { id: data.projectId } });
   if (!project) {
     throw new NotFoundError(`Project ${data.projectId} not found`);
@@ -18,8 +18,10 @@ export async function createTask(data: { projectId: string; name: string }): Pro
   return prisma.task.create({
     data: {
       projectId: data.projectId,
-      name: data.name,
-      status: TaskStatus.OPEN,
+      name:      data.name,
+      status:    TaskStatus.OPEN,
+      startDate: data.startDate ? new Date(data.startDate) : undefined,
+      endDate:   data.endDate   ? new Date(data.endDate)   : undefined,
     },
   });
 }
@@ -43,18 +45,18 @@ export async function listAllTasks(): Promise<Task[]> {
 
 export async function updateTask(
   id: string,
-  data: { name?: string; isActive?: boolean },
+  data: { name?: string; isActive?: boolean; startDate?: string | null; endDate?: string | null },
 ): Promise<Task> {
   const updateData: Prisma.TaskUpdateInput = {};
 
-  if (data.name !== undefined) {
-    updateData.name = data.name;
-  }
+  if (data.name      !== undefined) updateData.name      = data.name;
+  if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+  if (data.endDate   !== undefined) updateData.endDate   = data.endDate   ? new Date(data.endDate)   : null;
   if (data.isActive === false) {
-    updateData.status = TaskStatus.CLOSED;
+    updateData.status   = TaskStatus.CLOSED;
     updateData.closedAt = new Date();
   } else if (data.isActive === true) {
-    updateData.status = TaskStatus.OPEN;
+    updateData.status   = TaskStatus.OPEN;
     updateData.closedAt = null;
   }
 
