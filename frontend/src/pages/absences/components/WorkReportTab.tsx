@@ -190,7 +190,28 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
 
   return (
     <>
-      {/* Header */}
+      {/* Tab switcher */}
+      <div style={{ padding: '18px 18px 0', flexShrink: 0 }}>
+        <div className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#eef0f5] p-[5px]">
+          <button
+            type="button"
+            aria-selected="false"
+            onClick={onSwitchToAbsence}
+            className="h-[38px] rounded-[10px] bg-transparent text-sm font-semibold text-[#7a8092]"
+          >
+            דיווח העדרות
+          </button>
+          <button
+            type="button"
+            aria-selected="true"
+            className="h-[38px] rounded-[10px] border border-[#ececf2] bg-white text-sm font-semibold text-[#1a2233] shadow-[0_1px_1px_rgba(20,30,62,.04),0_2px_8px_rgba(20,30,62,.08)]"
+          >
+            דיווח עבודה
+          </button>
+        </div>
+      </div>
+
+      {/* Header: date + action buttons */}
       <div style={{
         background: '#FFFFFF',
         padding: '0 16px',
@@ -200,6 +221,7 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
         justifyContent: 'space-between',
         borderBottom: '1px solid #E5E7EB',
         flexShrink: 0,
+        marginTop: 12,
       }}>
         <button
           type="button"
@@ -263,27 +285,6 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
           {getMutationErrorMessage(upsert.error)}
         </div>
       )}
-
-      {/* Tab switcher */}
-      <div style={{ padding: '12px 18px 0', flexShrink: 0 }}>
-        <div className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#eef0f5] p-[5px]">
-          <button
-            type="button"
-            aria-selected="false"
-            onClick={onSwitchToAbsence}
-            className="h-[38px] rounded-[10px] bg-transparent text-sm font-semibold text-[#7a8092]"
-          >
-            דיווח העדרות
-          </button>
-          <button
-            type="button"
-            aria-selected="true"
-            className="h-[38px] rounded-[10px] border border-[#ececf2] bg-white text-sm font-semibold text-[#1a2233] shadow-[0_1px_1px_rgba(20,30,62,.04),0_2px_8px_rgba(20,30,62,.08)]"
-          >
-            דיווח עבודה
-          </button>
-        </div>
-      </div>
 
       {/* Date label */}
       <div className="px-[19px] pt-2 text-[13px] font-medium text-[#555a6b]" style={{ flexShrink: 0 }}>
