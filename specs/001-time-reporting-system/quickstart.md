@@ -179,3 +179,153 @@ Add/update test cases in `backend/src/__tests__/`:
 - `projects.test.ts` — test create with primaryManagerId (valid manager, non-manager, inactive user), endDate < startDate rejection.
 - `tasks.test.ts` — test endDate < startDate rejection, description truncation.
 - `users.test.ts` — test GET /managers returns only TEAM_LEAD/ADMIN with ACTIVE status.
+
+---
+
+## Stage 1 — Admin Nav Restructure Verification
+
+Stage 1 splits the admin sidebar into 4 tabs (Users / Clients / Projects / Tasks). The four
+pages already exist; no backend changes. Use these steps to verify after the routing + sidebar
+edits land.
+
+### 1. Type-check
+
+```powershell
+pnpm --filter frontend exec tsc --noEmit
+```
+Expect zero errors.
+
+### 2. Run the dev server
+
+```powershell
+pnpm --filter frontend dev
+```
+
+### 3. Verify as Admin
+
+Log in as an Admin and navigate to `/admin`. Expect:
+- Redirected to `/admin/users`.
+- Sidebar shows exactly 4 items top-to-bottom: `ניהול משתמשים`, `ניהול לקוחות`, `ניהול פרויקטים`, `ניהול משימות`.
+- The active item is highlighted with the existing orange edge accent.
+
+Click each tab:
+- `ניהול משתמשים` → `UsersListPage` renders.
+- `ניהול לקוחות` → `ClientsPage` renders (its inline `ProjectsSection` is still present — intentional in Stage 1).
+- `ניהול פרויקטים` → `ProjectsPage` renders (client picker + projects list).
+- `ניהול משימות` → `TasksPage` renders (client + project pickers + tasks list).
+
+### 4. Verify as Team Lead
+
+Log in as a Team Lead, navigate to `/admin`. Expect:
+- Sidebar shows exactly 3 items: Clients, Projects, Tasks. The Users entry is hidden.
+- Direct navigation to `/admin/users` is not blocked by Stage 1 (parent route still allows Team Lead). Server-side write endpoints for user management remain admin-only and are unaffected by this routing change.
+
+### 5. Files touched
+
+Only two files should change for Stage 1:
+- `frontend/src/pages/admin/AdminPage.tsx`
+- `frontend/src/router.tsx`
+
+### 6. Out-of-scope reminders
+
+- No edits to `UsersListPage`, `ClientsPage`, `ProjectsPage`, `TasksPage`, `ProjectsSection`, or `TasksSection`.
+- No backend changes.
+- No visual restyle.
+- The inline `ProjectsSection` inside `ClientsPage` stays — Stage 2 will untangle it.
+
+---
+
+## Stage 2 — Admin Tables & Create Modals Verification
+
+Stage 2 rebuilds Clients, Projects, and Tasks as table + create-modal pages, adds two
+backend list endpoints, and removes `ProjectsSection.tsx` / `TasksSection.tsx`. Verify after
+implementation as follows.
+
+### 1. Type-check and unit tests
+
+```powershell
+pnpm --filter backend exec tsc --noEmit
+pnpm --filter backend test -- --runTestsByPath src/__tests__/projects.test.ts src/__tests__/tasks.test.ts
+pnpm --filter frontend exec tsc --noEmit
+```
+All commands should pass.
+
+### 2. Start dev servers
+
+```powershell
+pnpm --filter backend dev   # one terminal
+pnpm --filter frontend dev  # another terminal
+```
+
+### 3. Clients page — `/admin/clients`
+
+- Page renders a table with columns: `שם`, `תיאור`, `סטטוס`, `נוצר ב`, `פעולות`.
+- Toolbar above table shows search input (right), `הצג גם לא פעילים` toggle, and `יצירה` button (left).
+- Click `יצירה` → modal opens with `שם לקוח` and `תיאור` fields. Submit creates a client; modal closes; new row appears.
+- Click edit icon on a row → modal opens pre-filled; submit updates row in-place.
+- Click delete icon → `ConfirmDialog` appears; confirming sets the row to `לא פעיל` and (with toggle OFF) it disappears from the table.
+- Toggle `הצג גם לא פעילים` ON → inactive rows reappear with muted styling; their action column shows `הפעל מחדש` instead of delete.
+- Type in search → table filters live to rows whose name or description contains the query (case-insensitive).
+
+### 4. Projects page — `/admin/projects`
+
+- Top of page: a single client `<select>` picker.
+- Below that: toolbar (search / inactive toggle / `יצירה`).
+- `יצירה` button is **always visible**, even when no client is selected.
+- With **no client selected**: clicking `יצירה` opens the modal with an empty `שם לקוח` dropdown (showing active clients). Empty state below toolbar reads `בחר לקוח כדי לראות פרויקטים`.
+- After picking a client: table renders with columns `שם`, `מנהל ראשי`, `תאריך התחלה`, `תאריך סיום`, `תיאור`, `סטטוס`, `פעולות`. Breadcrumb above table shows `לקוח: <name>`.
+- Clicking `יצירה` with a client selected → modal opens with `שם לקוח` **pre-selected and editable** (it's an enabled dropdown, not a disabled label).
+- Verify cross-field validation: setting `תאריך סיום` before `תאריך התחלה` shows the existing Hebrew error and blocks submit.
+- Delete icon → ConfirmDialog → row deactivates.
+
+### 5. Tasks page — `/admin/tasks`
+
+- Top of page: client `<select>`, then project `<select>` (cascades, disabled until a client is picked).
+- Toolbar (search / inactive toggle / `יצירה`).
+- `יצירה` always visible. With no project selected the modal opens with empty `לקוח` and `שיוך לפרויקט קיים` dropdowns (both enabled). Selecting a client in the modal filters the project dropdown.
+- With a project selected on the page: clicking `יצירה` opens the modal with both `לקוח` and `שיוך לפרויקט קיים` pre-selected and editable.
+- Table columns: `שם`, `תאריך התחלה`, `תאריך סיום`, `תיאור`, `סטטוס` (`פתוח`/`סגור`), `פעולות`.
+- Close (delete) icon → ConfirmDialog → task becomes `סגור`; with toggle OFF it disappears; with toggle ON it shows muted with a reopen icon.
+
+### 6. Backend endpoints sanity
+
+Using `curl` (replace tokens / IDs):
+
+```powershell
+# Projects by client — includes inactive, joins primaryManager
+curl -H "Authorization: Bearer <token>" "http://localhost:3000/api/v1/projects?clientId=<uuid>"
+
+# Tasks by project — includes inactive
+curl -H "Authorization: Bearer <token>" "http://localhost:3000/api/v1/tasks?projectId=<uuid>"
+```
+
+Expect: 200 with full entity arrays as defined in `contracts/admin-tables.md` § 5.
+
+A request without `clientId` / `projectId` returns 400. A request as a non-admin/team-lead user returns 403.
+
+### 7. Files touched (sanity check)
+
+```powershell
+git diff --stat main..HEAD
+```
+
+Expect changes to (no others):
+- `backend/src/routes/projects.ts`
+- `backend/src/routes/tasks.ts`
+- `backend/src/services/project.service.ts`
+- `backend/src/services/task.service.ts`
+- `backend/src/__tests__/projects.test.ts`
+- `backend/src/__tests__/tasks.test.ts`
+- `frontend/src/components/Modal.tsx` (NEW)
+- `frontend/src/components/ConfirmDialog.tsx` (NEW)
+- `frontend/src/pages/admin/clients/ClientsPage.tsx`
+- `frontend/src/pages/admin/projects/ProjectsPage.tsx`
+- `frontend/src/pages/admin/tasks/TasksPage.tsx`
+- `frontend/src/pages/admin/clients/ProjectsSection.tsx` (DELETED)
+- `frontend/src/pages/admin/clients/TasksSection.tsx` (DELETED)
+- `frontend/src/services/entities.service.ts`
+- `frontend/src/types/entities.ts`
+
+### 8. Rollback
+
+Stage 2 has no DB migration — `git revert` of the implementation commit is fully reversible.

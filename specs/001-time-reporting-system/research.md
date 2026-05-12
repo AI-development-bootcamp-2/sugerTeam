@@ -213,3 +213,255 @@ return HTTP 423 Locked with a clear message.
 **Decision**: The "שיוך לפרויקט קיים" dropdown uses `GET /api/v1/projects` (existing endpoint), client-side filtered by `status === 'ACTIVE'`. No new endpoint needed.
 
 **Rationale**: The existing projects endpoint already carries status and is used elsewhere.
+
+---
+
+## Admin Nav Restructure — Stage 1 (added 2026-05-12)
+
+Stage 1 splits the admin sidebar from 2 tabs into 4: **Users / Clients / Projects / Tasks**
+(top-to-bottom). The four destination pages already exist; Stage 1 is pure navigation +
+routing. Stage 2 (page redesign) is out of scope here.
+
+### S1.1 Tab order
+
+**Decision**: Top-to-bottom — **Users → Clients → Projects → Tasks**.
+
+**Rationale**: Explicitly requested by the user. Also mirrors the natural admin workflow:
+manage users first, then create clients, projects under clients, and tasks under projects.
+
+**Alternatives considered**: Hierarchy-only (Clients → Projects → Tasks → Users) — rejected
+because Users is the most frequent admin surface and the user pinned it to the top.
+
+### S1.2 Hebrew labels
+
+**Decision**: Reuse the established `ניהול X` pattern.
+
+| Tab      | Label             | Source                                                |
+|----------|-------------------|-------------------------------------------------------|
+| Users    | `ניהול משתמשים`    | Existing label                                         |
+| Clients  | `ניהול לקוחות`     | Split from existing combined `ניהול לקוחות/פרויקטים`     |
+| Projects | `ניהול פרויקטים`   | New — follows `ניהול X` pattern                        |
+| Tasks    | `ניהול משימות`     | New — follows `ניהול X` pattern                        |
+
+**Rationale**: Consistent prefix preserves the visual rhythm of the sidebar.
+
+### S1.3 Role gating per tab
+
+**Decision**:
+- `/admin/users` — Admin only (sidebar `adminOnly: true`).
+- `/admin/clients`, `/admin/projects`, `/admin/tasks` — Admin + Team Lead.
+
+**Rationale**: Matches Constitution IV and FR-030/FR-031. Team Leads need visibility into
+project/task management for their assignment workflow (FR-034). Server-side write
+authorization is independent of this routing change.
+
+### S1.4 Index redirect for `/admin`
+
+**Decision**: `/admin` → `/admin/users` (was `/admin/clients`).
+
+**Rationale**: The default route follows the new top-of-sidebar tab. Keeps the change
+mechanical — no per-role branching logic in Stage 1.
+
+### S1.5 ClientsPage embedded ProjectsSection
+
+**Decision**: Leave as-is in Stage 1.
+
+**Rationale**: Removing the inline `ProjectsSection` from `ClientsPage` is a page-redesign
+concern — explicitly Stage 2 territory ("how the pages should look like"). Stage 1 stays
+mechanical.
+
+### S1.6 Icons for the two new sidebar items
+
+**Decision**: Inline SVGs in the same stroked-outline family as existing icons. Folder/briefcase
+glyph for Projects, clipboard/checkmark glyph for Tasks.
+
+**Rationale**: Matches existing icon style; avoids pulling in an icon library for two glyphs.
+Library-wide icon migration, if any, belongs to Stage 2.
+
+---
+
+## Admin Pages Table Redesign — Stage 2 (added 2026-05-12)
+
+Stage 2 rebuilds Clients, Projects, and Tasks as table-driven pages with create-via-modal.
+The Users page stays as-is. Decisions below capture the calls made in addition to the spec.
+
+### S2.1 Page shape per entity
+
+**Decision**:
+
+- **Clients page** — top-level table of all clients. No parent picker.
+- **Projects page** — single **client picker** at the top; the table lists projects for that
+  client. The `יצירה` button is always visible (even before a client is picked).
+- **Tasks page** — two cascading pickers (**client → project**); the table lists tasks for the
+  selected project. The `יצירה` button is always visible.
+
+**Rationale**: Matches the user's explicit clarification: scope tables by parent so each list is
+small and contextual. The Client → Project → Task hierarchy (Constitution II) is reflected in
+the navigation chrome.
+
+**Alternatives considered**:
+- Flat tables across the whole DB with the parent shown as a column: rejected — would surface
+  potentially thousands of rows; would also lose the create-modal pre-fill behavior the user
+  wanted.
+
+### S2.2 Create-modal parent dropdown behavior
+
+**Decision**: In create modals the previously-disabled parent fields become **always-enabled
+dropdowns**. When a parent is already selected on the page (e.g. user picked a client before
+clicking `יצירה`), the modal opens with that parent pre-selected — but the user can change it.
+
+- **Project create modal**: client dropdown always enabled. Pre-selected = the client picker's
+  current value if any; empty otherwise.
+- **Task create modal**: client + project dropdowns always enabled and cascade (client filters
+  projects). Pre-selected = the page's current pickers if any; empty otherwise.
+
+**Rationale**: Matches the user's clarification. Keeps a single create-modal codepath whether
+the user starts from the page header or from a row context. Lets admins create cross-cutting
+items without leaving the page.
+
+**Alternatives considered**:
+- Lock the parent dropdown when one is already selected on the page: rejected — the user
+  explicitly asked for it to remain enabled.
+
+### S2.3 Inactive items — toggle behavior
+
+**Decision**: Tables show **active items by default**. A small toggle above each table
+(`הצג גם לא פעילים`) controls inclusion of inactive rows.
+
+- Inactive rows are visually de-emphasized (muted text, italic status badge).
+- On an inactive row the `פעולות` column shows an **`הפעל מחדש`** icon (reactivate) instead of
+  the delete icon. Edit remains available for both states.
+
+**Rationale**: Confirmed by the user in the AskUserQuestion turn. Aligns with Constitution VII
+(Transparency) — soft-deleted items are visible on demand rather than hidden.
+
+**Alternatives considered**:
+- Always include inactive rows with status column: rejected by the user.
+- Active only with no toggle: rejected by the user.
+
+### S2.4 Delete icon semantics
+
+**Decision**: The delete (trash) icon performs a **soft-delete** via `PATCH /:id { isActive: false }`
+on the existing endpoint. A `<ConfirmDialog>` confirms before the call. No hard-delete option
+is exposed in this stage.
+
+**Rationale**: FR-032 mandates soft-delete only — "no data is physically removed". The icon
+is a UX shorthand; the server contract is unchanged. Re-activation uses the same endpoint with
+`isActive: true`.
+
+**Alternatives considered**:
+- Add a hard-delete endpoint: rejected — would violate FR-032 and Constitution III.
+- Distinct "deactivate" and "delete" icons: rejected — there is only one operation.
+
+### S2.5 Table columns per entity
+
+**Decision**:
+
+| Page    | Columns                                                                                         |
+|---------|-------------------------------------------------------------------------------------------------|
+| Clients | `שם`, `תיאור`, `סטטוס`, `נוצר ב`, `פעולות`                                                        |
+| Projects| `שם`, `מנהל ראשי`, `תאריך התחלה`, `תאריך סיום`, `תיאור`, `סטטוס`, `פעולות`                          |
+| Tasks   | `שם`, `תאריך התחלה`, `תאריך סיום`, `תיאור`, `סטטוס`, `פעולות`                                      |
+
+- The parent column (`לקוח` on Projects, `פרויקט`/`לקוח` on Tasks) is **omitted** from the body
+  because the page is already scoped to one parent — the page header carries the breadcrumb
+  (`לקוח: X` / `לקוח: X › פרויקט: Y`).
+- `תיאור` is truncated with a tooltip on hover/touch.
+- Dates render as `dd/MM/yyyy` (Hebrew locale).
+
+**Rationale**: Avoids redundant columns since the table itself is parent-scoped. Keeps the
+table readable on tablet width without horizontal scroll for the typical case.
+
+**Alternatives considered**:
+- Include parent columns anyway: rejected — duplicate information; the breadcrumb is clearer.
+- Add a created-at column on Projects/Tasks: deferred — not requested and rarely useful for
+  admin daily use.
+
+### S2.6 Table chrome — no sorting, no pagination in v1
+
+**Decision**: Top-of-table chrome is **search input only + `יצירה` button + inactive toggle**.
+No clickable column-sort headers, no pagination, no virtualization. Sticky table header for
+long lists.
+
+**Rationale**: The user did not ask for sorting/pagination, and parent-scoped tables stay
+small (typically <50 rows per project for tasks; per client for projects; <a few hundred clients
+total). Adding sort + pagination would inflate scope without clear benefit. Search covers the
+"find quickly" use case for v1. If row counts grow, sorting can be added in a focused follow-up.
+
+**Alternatives considered**:
+- Sortable headers: deferred — easy to add later without re-architecting the table.
+- Server-side pagination: rejected — premature; payloads are small.
+
+### S2.7 Search behavior
+
+**Decision**: Search is **client-side**, case-insensitive substring match over each row's
+`name` and `description` fields. Debounced 150ms. Search is **scoped to the currently loaded
+list** (i.e. after the parent picker filter, after the inactive toggle).
+
+**Rationale**: Datasets are small enough that client-side search is instant and avoids new
+backend query params. Including `description` lets admins find items by note content.
+
+**Alternatives considered**:
+- Server-side search with a query param: rejected — premature.
+- Search across additional columns (manager, dates): deferred — adds complexity for marginal
+  benefit. Easy to extend the matcher later.
+
+### S2.8 Modal interaction
+
+**Decision**: A single shared `<Modal>` component with:
+- Backdrop click to close.
+- `Esc` to close.
+- Focus trap inside the modal while open.
+- `aria-modal="true"` and `role="dialog"`.
+- Smooth open/close (CSS transition, no library).
+- RTL layout (modal content uses `dir="rtl"`).
+
+Edit uses the **same modal** as create, pre-populated with the row's values. The create vs
+edit distinction is internal to the modal's submit handler.
+
+**Rationale**: Symmetric UX. Avoids two divergent forms. Reduces component count.
+
+**Alternatives considered**:
+- Inline accordion edit (current Stage-1 leftover behavior): rejected — the user explicitly
+  asked for a modal pattern.
+- Separate edit modal component: rejected — same form fields, different mutation; one
+  component with a `mode: 'create' | 'edit'` prop is simpler.
+
+### S2.9 Backend list endpoints
+
+**Decision**: Two new admin/team-lead-only list endpoints that return full entity shape with
+joined parent data, including inactive rows:
+
+- `GET /api/v1/projects?clientId=<uuid>` → `ProjectWithRelations[]`
+  - Includes inactive rows.
+  - Joins `primaryManager: { id, fullName, role } | null`.
+  - Replaces the minimal shape currently returned by `GET /api/v1/projects/active`.
+- `GET /api/v1/tasks?projectId=<uuid>` → `TaskWithRelations[]`
+  - Includes inactive rows.
+  - Joins `project: { id, name, clientId }`.
+
+**Rationale**: The existing `/active` endpoints return a stripped `{ id, name, parentId }`
+shape designed for dropdowns, and they exclude inactive rows by design. A table needs the full
+row plus joined parent info plus inactive rows. Adding new top-level routes keeps the
+dropdown-style endpoints unchanged and avoids overloading them with payload-shape switches.
+
+**Alternatives considered**:
+- Add `?includeInactive=true&full=true` query params to existing routes: rejected — overloads
+  the route with two orthogonal payload shapes; harder to type.
+- Use `/api/v1/clients/:id/projects` REST nesting: rejected — adds a new nesting pattern not
+  used elsewhere; query-param style matches existing `/active?clientId=` shape.
+
+### S2.10 Cleanup of `ProjectsSection` and `TasksSection`
+
+**Decision**: Delete `frontend/src/pages/admin/clients/ProjectsSection.tsx` and
+`frontend/src/pages/admin/clients/TasksSection.tsx`. The new `ClientsPage` is a flat table
+with no embedded child surface. The new `ProjectsPage` and `TasksPage` replace the
+sectioned-inside-a-client UX entirely.
+
+**Rationale**: Stage 1 left these components in place. With Stage 2's flat-table redesign,
+they are unreachable and would otherwise rot. Their logic (form fields, validation, mutation
+wiring) is reproduced inside the new create/edit modals.
+
+**Alternatives considered**:
+- Keep them around for future re-use: rejected — dead code; the new modal pattern subsumes
+  their functionality.
