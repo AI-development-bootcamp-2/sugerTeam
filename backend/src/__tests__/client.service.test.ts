@@ -16,6 +16,7 @@ jest.mock('@/lib/prisma', () => ({
 const mockClient = {
   id: 'test-client-id',
   name: 'Test Client',
+  description: null,
   status: EntityStatus.ACTIVE,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -82,36 +83,33 @@ describe('updateClient', () => {
     });
   });
 
-  it('sets status INACTIVE and deletedAt when isActive=false', async () => {
+  it('sets status INACTIVE when isActive=false', async () => {
     jest.mocked(prisma.client.update).mockResolvedValue({
       ...mockClient,
       status: EntityStatus.INACTIVE,
-      deletedAt: new Date(),
     });
 
     await updateClient('test-client-id', { isActive: false });
 
     expect(prisma.client.update).toHaveBeenCalledWith({
       where: { id: 'test-client-id' },
-      data: expect.objectContaining({
-        status: EntityStatus.INACTIVE,
-        deletedAt: expect.any(Date),
-      }),
+      data: expect.objectContaining({ status: EntityStatus.INACTIVE }),
     });
+    const callArgs = jest.mocked(prisma.client.update).mock.calls[0][0];
+    expect(callArgs.data).not.toHaveProperty('deletedAt');
   });
 
-  it('sets status ACTIVE and deletedAt null when isActive=true', async () => {
+  it('sets status ACTIVE when isActive=true', async () => {
     jest.mocked(prisma.client.update).mockResolvedValue(mockClient);
 
     await updateClient('test-client-id', { isActive: true });
 
     expect(prisma.client.update).toHaveBeenCalledWith({
       where: { id: 'test-client-id' },
-      data: expect.objectContaining({
-        status: EntityStatus.ACTIVE,
-        deletedAt: null,
-      }),
+      data: expect.objectContaining({ status: EntityStatus.ACTIVE }),
     });
+    const callArgs = jest.mocked(prisma.client.update).mock.calls[0][0];
+    expect(callArgs.data).not.toHaveProperty('deletedAt');
   });
 
   it('propagates P2025 without converting it', async () => {
