@@ -93,13 +93,6 @@ function CreateProjectModal({
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">תיאור</label>
-          <input
-            {...register('description')}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
             <label className="text-sm font-medium">תאריך התחלה</label>
@@ -117,6 +110,14 @@ function CreateProjectModal({
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">תיאור</label>
+          <input
+            {...register('description')}
+            placeholder="תאר בקצרה את הפרויקט"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -250,6 +251,11 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
         <td className="px-4 py-3 text-sm text-gray-500">{project.client.name}</td>
         <td className="px-4 py-3 text-sm font-medium">{project.name}</td>
         <td className="px-4 py-3 text-sm text-gray-500">
+          <div className="w-40 truncate" title={project.description ?? undefined}>
+            {project.description ?? '—'}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-500">
           {project.primaryManager?.fullName ?? '—'}
         </td>
         <td className="px-4 py-3 text-sm text-gray-500">{formatDate(project.startDate)}</td>
@@ -360,6 +366,7 @@ export default function ProjectsPage() {
               <tr>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-white">לקוח</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם פרויקט</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תיאור</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-white">מנהל ראשי</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-white">התחלה</th>
                 <th className="px-4 py-3 text-start text-sm font-semibold text-white">סיום</th>

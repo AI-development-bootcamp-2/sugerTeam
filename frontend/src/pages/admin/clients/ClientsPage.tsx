@@ -25,6 +25,7 @@ function ClientFormFields({ register, errors }: { register: ReturnType<typeof us
         <label className="text-sm font-medium">תיאור</label>
         <input
           {...register('description')}
+          placeholder="תאר בקצרה את הלקוח"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -132,7 +133,11 @@ function ClientRow({ client }: { client: Client }) {
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
         <td className="px-4 py-3 text-sm font-medium">{client.name}</td>
-        <td className="px-4 py-3 text-sm text-gray-500">{client.description ?? '—'}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">
+          <div className="w-40 truncate" title={client.description ?? undefined}>
+            {client.description ?? '—'}
+          </div>
+        </td>
         <td className="px-4 py-3">
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
