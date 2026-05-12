@@ -39,11 +39,12 @@ describe('Authentication / authorisation', () => {
     expect(r.status).toBe(401);
   });
 
-  it('GET /tasks without projectId returns 400', async () => {
+  it('GET /tasks without projectId returns 200 with all tasks', async () => {
     const r = await request(app)
       .get('/api/v1/tasks')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(r.status).toBe(400);
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body)).toBe(true);
   });
 });
 

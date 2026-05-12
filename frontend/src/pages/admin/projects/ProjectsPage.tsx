@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   useAllClients,
-  useProjectsByClient,
   useAllProjects,
   useCreateProject,
   useUpdateProject,

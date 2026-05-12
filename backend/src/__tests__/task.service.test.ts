@@ -93,6 +93,11 @@ describe('listTasksByProject', () => {
 
     expect(prisma.task.findMany).toHaveBeenCalledWith({
       where: { projectId: 'proj-id' },
+      include: {
+        project: {
+          select: { id: true, name: true, client: { select: { id: true, name: true } } },
+        },
+      },
       orderBy: { name: 'asc' },
     });
     expect(result).toHaveLength(2);
