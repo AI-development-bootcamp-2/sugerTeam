@@ -24,7 +24,7 @@ async function seedAdmin(): Promise<void> {
   console.log('✓ Admin user seeded: admin@company.com');
 }
 
-async function seedWeekends(year: number): Promise<void> {
+async function seedCalendarYear(year: number): Promise<void> {
   const records: {
     date: Date;
     dayType: DayType;
@@ -32,19 +32,18 @@ async function seedWeekends(year: number): Promise<void> {
     standardHours: number;
   }[] = [];
 
-  const start = new Date(year, 0, 1);
-  const end = new Date(year, 11, 31);
+  const start = new Date(Date.UTC(year, 0, 1));
+  const end = new Date(Date.UTC(year, 11, 31));
 
-  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const day = d.getDay();
-    if (day === 5 || day === 6) {
-      records.push({
-        date: new Date(d),
-        dayType: DayType.WEEKEND,
-        isWorkingDay: false,
-        standardHours: 0,
-      });
-    }
+  for (const d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const day = d.getUTCDay();
+    const isWeekend = day === 5 || day === 6;
+    records.push({
+      date: new Date(d),
+      dayType: isWeekend ? DayType.WEEKEND : DayType.REGULAR,
+      isWorkingDay: !isWeekend,
+      standardHours: isWeekend ? 0 : 9,
+    });
   }
 
   for (const record of records) {
@@ -55,13 +54,26 @@ async function seedWeekends(year: number): Promise<void> {
     });
   }
 
-  console.log(`✓ Seeded ${records.length} weekend days for ${year}`);
+  console.log(`✓ Seeded ${records.length} calendar days for ${year}`);
+}
+
+async function seedMonthLocks(year: number): Promise<void> {
+  for (let month = 1; month <= 12; month += 1) {
+    await prisma.monthLock.upsert({
+      where: { year_month: { year, month } },
+      update: {},
+      create: { year, month, isLocked: false },
+    });
+  }
+  console.log(`✓ Seeded 12 unlocked month locks for ${year}`);
 }
 
 async function main(): Promise<void> {
   await seedAdmin();
-  await seedWeekends(2026);
-  await seedWeekends(2027);
+  for (const year of [2025, 2026, 2027]) {
+    await seedCalendarYear(year);
+    await seedMonthLocks(year);
+  }
 }
 
 main()
