@@ -8,6 +8,7 @@ import {
   deactivateUser,
   activateUser,
   ConflictError,
+  NotFoundError,
 } from '../services/user.service';
 
 jest.mock('../prisma/client', () => ({
@@ -197,12 +198,11 @@ describe('updateUser', () => {
     await expect(updateUser('id', { fullName: 'X' })).rejects.toThrow(ConflictError);
   });
 
-  it('propagates P2025 without converting to ConflictError', async () => {
+  it('throws NotFoundError on P2025', async () => {
     const err = Object.assign(new Error('Not found'), { code: 'P2025' });
     jest.mocked(prisma.user.update).mockRejectedValue(err);
 
-    await expect(updateUser('id', { fullName: 'X' })).rejects.not.toThrow(ConflictError);
-    await expect(updateUser('id', { fullName: 'X' })).rejects.toMatchObject({ code: 'P2025' });
+    await expect(updateUser('id', { fullName: 'X' })).rejects.toThrow(NotFoundError);
   });
 });
 
