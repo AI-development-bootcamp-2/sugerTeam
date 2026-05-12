@@ -18,7 +18,7 @@ export interface SavedFile {
 }
 
 function sanitizeOriginalName(name: string): string {
-  return path.basename(name).replace(/[^\w.\-]+/g, '_');
+  return path.basename(name).replace(/[^\w.-]+/g, '_');
 }
 
 export class FileStorageService {

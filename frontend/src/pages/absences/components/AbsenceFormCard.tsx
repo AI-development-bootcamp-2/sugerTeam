@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import axios from 'axios';
 import { z } from 'zod';
@@ -105,7 +105,7 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<AbsenceFormData>({
@@ -118,10 +118,10 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
     },
   });
 
-  const startDate = watch('startDate');
-  const endDate = watch('endDate');
-  const absenceType = watch('absenceType');
-  const isPartial = watch('isPartial');
+  const startDate = useWatch({ control, name: 'startDate' });
+  const endDate = useWatch({ control, name: 'endDate' });
+  const absenceType = useWatch({ control, name: 'absenceType' });
+  const isPartial = useWatch({ control, name: 'isPartial' });
 
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
