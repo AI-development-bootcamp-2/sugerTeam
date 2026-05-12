@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { UserRole } from '@prisma/client';
 import { authenticateToken } from '@/middleware/auth';
 import { requireRole } from '@/middleware/roleGuard';
 import {
@@ -10,31 +9,34 @@ import {
   deactivateUser,
   activateUser,
   ConflictError,
+  NotFoundError,
 } from '@/services/user.service';
 
 const router = Router();
 
 router.use(authenticateToken);
-router.use(requireRole(UserRole.ADMIN));
+router.use(requireRole('ADMIN'));
+
+const USER_ROLES = ['EMPLOYEE', 'TEAM_LEAD', 'ADMIN'] as const;
 
 const createUserSchema = z.object({
   fullName: z.string().min(1),
   email:    z.string().email(),
   password: z.string().min(8),
-  role:     z.nativeEnum(UserRole),
+  role:     z.enum(USER_ROLES),
 });
 
 const updateUserSchema = z.object({
   fullName: z.string().min(1).optional(),
   email:    z.string().email().optional(),
-  role:     z.nativeEnum(UserRole).optional(),
+  role:     z.enum(USER_ROLES).optional(),
 }).refine(
   (d) => Object.keys(d).length > 0,
   { message: 'At least one field must be provided' },
 );
 
 const listQuerySchema = z.object({
-  role:     z.nativeEnum(UserRole).optional(),
+  role:     z.enum(USER_ROLES).optional(),
   isActive: z.enum(['true', 'false']).optional(),
   search:   z.string().optional(),
 });
@@ -89,14 +91,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     const user = await updateUser(id, result.data);
     res.status(200).json(user);
   } catch (err) {
-    if (err instanceof ConflictError) {
-      res.status(409).json({ error: err.message });
-      return;
-    }
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof ConflictError) { res.status(409).json({ error: err.message }); return; }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });
@@ -107,10 +103,7 @@ router.patch('/:id/deactivate', async (req: Request, res: Response, next: NextFu
     const user = await deactivateUser(id);
     res.status(200).json(user);
   } catch (err) {
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });
@@ -121,10 +114,7 @@ router.patch('/:id/activate', async (req: Request, res: Response, next: NextFunc
     const user = await activateUser(id);
     res.status(200).json(user);
   } catch (err) {
-    if ((err as { code?: string }).code === 'P2025') {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+    if (err instanceof NotFoundError) { res.status(404).json({ error: err.message }); return; }
     next(err);
   }
 });

@@ -3,15 +3,21 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRouter from './routes/auth';
 import usersRouter from './routes/users';
+import clientsRouter from './routes/clients';
+import projectsRouter from './routes/projects';
 
 const app = express();
 
+const corsOptions = { origin: process.env.CLIENT_URL, credentials: true };
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
-app.use(cors({ origin: process.env.VITE_API_URL, credentials: true }));
 app.use(cookieParser());
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/clients', clientsRouter);
+app.use('/api/v1/projects', projectsRouter);
 
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });

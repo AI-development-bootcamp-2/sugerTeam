@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { UserRole } from '@prisma/client';
+//import type { UserRole } from '@prisma/client';
 import { prisma } from '@/prisma/client';
 
 const YEAR_MONTH_RE = /^\d{4}-\d{2}$/;
@@ -60,7 +60,7 @@ export function checkMonthLock(): RequestHandler {
         where: { year_month: { year, month } },
       });
 
-      if (lock?.isLocked && req.user.role !== UserRole.ADMIN) {
+      if (lock?.isLocked && req.user.role !== 'ADMIN') {
         res.status(423).json({ error: 'החודש נעול, לא ניתן לבצע שינויים' });
         return;
       }
