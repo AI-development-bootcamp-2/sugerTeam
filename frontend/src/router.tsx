@@ -9,6 +9,8 @@ import { AbsencesPage } from './pages/absences/AbsencesPage';
 import { AdminPage } from './pages/admin/AdminPage';
 import ClientsPage from './pages/admin/clients/ClientsPage';
 import UsersListPage from './pages/admin/users/UsersListPage';
+import ProjectsPage from './pages/admin/projects/ProjectsPage';
+import TasksPage from './pages/admin/tasks/TasksPage';
 import { SelectViewPage } from './pages/select-view/SelectViewPage';
 import TimeReportPage from './pages/time-report/TimeReportPage';
 
@@ -42,6 +44,8 @@ const router = createBrowserRouter([
           { index: true, element: <Navigate to="/admin/clients" replace /> },
           { path: 'users', element: <UsersListPage /> },
           { path: 'clients', element: <ClientsPage /> },
+          { path: 'projects', element: <ProjectsPage /> },
+          { path: 'tasks', element: <TasksPage /> },
         ],
       },
     ],

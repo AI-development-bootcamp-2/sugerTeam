@@ -42,6 +42,20 @@ export async function listAllProjects(): Promise<Project[]> {
   });
 }
 
+export type ProjectWithManager = Project & {
+  primaryManager: { id: string; fullName: string; role: string } | null;
+};
+
+export async function listProjectsByClient(clientId: string): Promise<ProjectWithManager[]> {
+  return prisma.project.findMany({
+    where: { clientId },
+    include: {
+      primaryManager: { select: { id: true, fullName: true, role: true } },
+    },
+    orderBy: { name: 'asc' },
+  });
+}
+
 export async function updateProject(
   id: string,
   data: { name?: string; isActive?: boolean },

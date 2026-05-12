@@ -6,6 +6,7 @@ import { requireRole } from '@/middleware/roleGuard';
 import {
   createProject,
   listActiveProjects,
+  listProjectsByClient,
   updateProject,
   NotFoundError,
 } from '@/services/project.service';
@@ -41,6 +42,20 @@ router.get('/active', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const projects = await listActiveProjects(result.data.clientId);
     res.status(200).json(projects.map((p) => ({ id: p.id, name: p.name, clientId: p.clientId })));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/', requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD), async (req: Request, res: Response, next: NextFunction) => {
+  const result = activeQuerySchema.safeParse(req.query);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.format() });
+    return;
+  }
+  try {
+    const projects = await listProjectsByClient(result.data.clientId);
+    res.status(200).json(projects);
   } catch (err) {
     next(err);
   }

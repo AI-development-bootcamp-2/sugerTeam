@@ -16,6 +16,7 @@ jest.mock('@/lib/prisma', () => ({
 const mockClient = {
   id: 'test-client-id',
   name: 'Test Client',
+  description: null,
   status: EntityStatus.ACTIVE,
   createdAt: new Date(),
   updatedAt: new Date(),

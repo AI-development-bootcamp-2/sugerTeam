@@ -85,53 +85,63 @@ model User {
   updatedAt         DateTime   @updatedAt
   deletedAt         DateTime?
 
-  dailyReports     DailyReport[]
-  absenceReports   AbsenceReport[]
-  taskAssignments  TaskAssignment[]  @relation("AssignedUser")
-  assignedByMe     TaskAssignment[]  @relation("AssignedBy")
-  lockedMonths     MonthLock[]       @relation("LockedBy")
-  reopenedMonths   MonthLock[]       @relation("ReopenedBy")
-  auditPerformed   AuditLog[]        @relation("PerformedBy")
-  auditTargeted    AuditLog[]        @relation("TargetUser")
-  absenceDocuments AbsenceDocument[]
-  refreshTokens    RefreshToken[]
+  dailyReports      DailyReport[]
+  absenceReports    AbsenceReport[]
+  taskAssignments   TaskAssignment[]  @relation("AssignedUser")
+  assignedByMe      TaskAssignment[]  @relation("AssignedBy")
+  lockedMonths      MonthLock[]       @relation("LockedBy")
+  reopenedMonths    MonthLock[]       @relation("ReopenedBy")
+  auditPerformed    AuditLog[]        @relation("PerformedBy")
+  auditTargeted     AuditLog[]        @relation("TargetUser")
+  absenceDocuments  AbsenceDocument[]
+  refreshTokens     RefreshToken[]
+  managedProjects   Project[]         @relation("PrimaryManager")
 }
 
 model Client {
-  id        String       @id @default(uuid())
-  name      String
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  deletedAt DateTime?
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  status      EntityStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
 
   projects    Project[]
   timeEntries TimeReportEntry[]
 }
 
 model Project {
-  id        String       @id @default(uuid())
-  clientId  String
-  name      String
-  status    EntityStatus @default(ACTIVE)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  deletedAt DateTime?
+  id               String       @id @default(uuid())
+  clientId         String
+  name             String
+  description      String?
+  startDate        DateTime?
+  endDate          DateTime?
+  primaryManagerId String?
+  status           EntityStatus @default(ACTIVE)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
 
-  client      Client            @relation(fields: [clientId], references: [id])
-  tasks       Task[]
-  timeEntries TimeReportEntry[]
+  client         Client            @relation(fields: [clientId], references: [id])
+  primaryManager User?             @relation("PrimaryManager", fields: [primaryManagerId], references: [id])
+  tasks          Task[]
+  timeEntries    TimeReportEntry[]
 }
 
 model Task {
-  id        String     @id @default(uuid())
-  projectId String
-  name      String
-  status    TaskStatus @default(OPEN)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  closedAt  DateTime?
-  deletedAt DateTime?
+  id          String     @id @default(uuid())
+  projectId   String
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      TaskStatus @default(OPEN)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  closedAt    DateTime?
+  deletedAt   DateTime?
 
   project     Project           @relation(fields: [projectId], references: [id])
   assignments TaskAssignment[]

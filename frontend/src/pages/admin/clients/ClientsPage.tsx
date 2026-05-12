@@ -2,125 +2,138 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAllClients, useCreateClient, useUpdateClient } from '../../../services/entities.service';
 import type { Client } from '../../../types/entities';
-import ProjectsSection from './ProjectsSection';
+import Modal from '../../../components/Modal';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 
-interface NameForm {
+interface ClientForm {
   name: string;
+  description: string;
 }
 
-function CreateClientForm({ onClose }: { onClose: () => void }) {
+function ClientFormFields({ register, errors }: { register: ReturnType<typeof useForm<ClientForm>>['register']; errors: ReturnType<typeof useForm<ClientForm>>['formState']['errors'] }) {
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">שם לקוח *</label>
+        <input
+          {...register('name', { required: 'שדה חובה' })}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium">תיאור</label>
+        <input
+          {...register('description')}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </>
+  );
+}
+
+function CreateClientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<NameForm>();
+  } = useForm<ClientForm>();
   const createClient = useCreateClient();
 
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
   return (
-    <form
-      onSubmit={handleSubmit((data) => {
-        createClient.mutate(data, {
-          onSuccess: () => {
-            reset();
-            onClose();
-          },
-        });
-      })}
-      className="mt-3 flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4"
-    >
-      <input
-        {...register('name', { required: 'שדה חובה' })}
-        placeholder="שם לקוח"
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={createClient.isPending}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          שמור
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
-        >
-          ביטול
-        </button>
-      </div>
-    </form>
+    <Modal isOpen={isOpen} onClose={handleClose} title="יצירת לקוח">
+      <form
+        onSubmit={handleSubmit((data) => {
+          createClient.mutate(
+            { name: data.name, description: data.description || undefined },
+            { onSuccess: handleClose },
+          );
+        })}
+        className="flex flex-col gap-4"
+      >
+        <ClientFormFields register={register} errors={errors} />
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            ביטול
+          </button>
+          <button
+            type="submit"
+            disabled={createClient.isPending}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            שמור
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
-function EditClientForm({ client, onClose }: { client: Client; onClose: () => void }) {
+function EditClientModal({ client, isOpen, onClose }: { client: Client; isOpen: boolean; onClose: () => void }) {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<NameForm>({ defaultValues: { name: client.name } });
+  } = useForm<ClientForm>({
+    defaultValues: { name: client.name, description: client.description ?? '' },
+  });
   const updateClient = useUpdateClient();
 
   return (
-    <form
-      onSubmit={handleSubmit((data) => {
-        updateClient.mutate({ id: client.id, name: data.name }, { onSuccess: onClose });
-      })}
-      className="flex flex-col gap-2"
-    >
-      <input
-        {...register('name', { required: 'שדה חובה' })}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={updateClient.isPending}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          שמור
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
-        >
-          ביטול
-        </button>
-      </div>
-    </form>
+    <Modal isOpen={isOpen} onClose={onClose} title="עריכת לקוח">
+      <form
+        onSubmit={handleSubmit((data) => {
+          updateClient.mutate(
+            { id: client.id, name: data.name, description: data.description || undefined },
+            { onSuccess: onClose },
+          );
+        })}
+        className="flex flex-col gap-4"
+      >
+        <ClientFormFields register={register} errors={errors} />
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            ביטול
+          </button>
+          <button
+            type="submit"
+            disabled={updateClient.isPending}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            שמור
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 
-function ClientAccordion({ client }: { client: Client }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+function ClientRow({ client }: { client: Client }) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const updateClient = useUpdateClient();
   const isActive = client.status === 'ACTIVE';
-  const showBody = isExpanded || isEditing;
-
-  const handleToggleActive = () => {
-    if (isActive) {
-      setConfirmDeactivate(true);
-    } else {
-      updateClient.mutate({ id: client.id, isActive: true });
-    }
-  };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
-      <div className="flex items-center gap-3 p-3">
-        <button
-          type="button"
-          onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex flex-1 items-center gap-3 text-start"
-        >
-          <span className="text-xs text-gray-400">{isExpanded ? '▲' : '▼'}</span>
-          <span className="font-medium">{client.name}</span>
+    <>
+      <tr className="border-b border-gray-100 hover:bg-gray-50">
+        <td className="px-4 py-3 text-sm font-medium">{client.name}</td>
+        <td className="px-4 py-3 text-sm text-gray-500">{client.description ?? '—'}</td>
+        <td className="px-4 py-3">
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
               isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
@@ -128,95 +141,97 @@ function ClientAccordion({ client }: { client: Client }) {
           >
             {isActive ? 'פעיל' : 'לא פעיל'}
           </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsEditing((prev) => !prev)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-        >
-          ערוך
-        </button>
-        <button
-          type="button"
-          onClick={handleToggleActive}
-          disabled={updateClient.isPending}
-          className={`rounded-md px-3 py-1.5 text-sm disabled:opacity-50 ${
-            isActive
-              ? 'border border-red-300 text-red-600 hover:bg-red-50'
-              : 'border border-green-300 text-green-700 hover:bg-green-50'
-          }`}
-        >
-          {isActive ? 'השבת' : 'הפעל'}
-        </button>
-      </div>
-
-      {confirmDeactivate && (
-        <div className="border-t border-gray-200 bg-amber-50 px-4 py-3">
-          <p className="mb-3 text-sm text-amber-800">
-            השבתה תסיר לקוח מהרשימות הפעילות. דיווחים קיימים לא ייפגעו.
-          </p>
-          <div className="flex gap-2">
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                updateClient.mutate(
-                  { id: client.id, isActive: false },
-                  { onSuccess: () => setConfirmDeactivate(false) },
-                );
-              }}
-              disabled={updateClient.isPending}
-              className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+              onClick={() => setEditOpen(true)}
+              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="ערוך"
             >
-              אישור
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 0 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
             </button>
             <button
               type="button"
-              onClick={() => setConfirmDeactivate(false)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-100"
+              onClick={() => setConfirmOpen(true)}
+              className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+              aria-label="השבת"
             >
-              ביטול
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" />
+              </svg>
             </button>
           </div>
-        </div>
-      )}
+        </td>
+      </tr>
 
-      {showBody && (
-        <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-3">
-          {isEditing && (
-            <EditClientForm client={client} onClose={() => setIsEditing(false)} />
-          )}
-          {isExpanded && <ProjectsSection clientId={client.id} />}
-        </div>
-      )}
-    </div>
+      <EditClientModal client={client} isOpen={editOpen} onClose={() => setEditOpen(false)} />
+
+      <ConfirmDialog
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          updateClient.mutate(
+            { id: client.id, isActive: false },
+            { onSuccess: () => setConfirmOpen(false) },
+          );
+        }}
+        title="השבתת לקוח"
+        message="האם אתה בטוח שברצונך להשבית לקוח זה? הלקוח יוסר מהרשימות הפעילות."
+        confirmLabel="השבת"
+        isPending={updateClient.isPending}
+      />
+    </>
   );
 }
 
 export default function ClientsPage() {
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const { data: clients, isLoading } = useAllClients();
 
   return (
-    <main className="mx-auto max-w-2xl p-4">
-      <h1 className="mb-6 text-2xl font-bold">לקוחות</h1>
-
-      <button
-        type="button"
-        onClick={() => setShowCreateForm((prev) => !prev)}
-        className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
-      >
-        + לקוח חדש
-      </button>
-
-      {showCreateForm && <CreateClientForm onClose={() => setShowCreateForm(false)} />}
-
-      {isLoading && <p className="mt-4 text-gray-500">טוען...</p>}
-
-      <div className="mt-4 flex flex-col gap-2">
-        {clients?.map((client) => (
-          <ClientAccordion key={client.id} client={client} />
-        ))}
+    <div dir="rtl" className="p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">לקוחות</h1>
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+        >
+          + יצירה
+        </button>
       </div>
-    </main>
+
+      {isLoading && <p className="text-gray-500">טוען...</p>}
+
+      {clients && clients.length > 0 && (
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">שם לקוח</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">תיאור</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">סטטוס</th>
+                <th className="px-4 py-3 text-start text-sm font-semibold text-gray-600">פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((client) => (
+                <ClientRow key={client.id} client={client} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {clients && clients.length === 0 && (
+        <p className="text-gray-500">אין לקוחות במערכת</p>
+      )}
+
+      <CreateClientModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
+    </div>
   );
 }
