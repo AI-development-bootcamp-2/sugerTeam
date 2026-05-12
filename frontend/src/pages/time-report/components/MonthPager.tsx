@@ -28,10 +28,7 @@ function ChevronIcon({ direction }: { direction: 'right' | 'left' }) {
 }
 
 function getMonthLabel(month: number, year: number): string {
-  return new Date(year, month - 1, 1).toLocaleDateString('he-IL', {
-    month: 'long',
-    year: 'numeric',
-  });
+  return new Date(year, month - 1, 1).toLocaleDateString('he-IL', { month: 'long' });
 }
 
 export default function MonthPager({

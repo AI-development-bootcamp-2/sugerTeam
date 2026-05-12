@@ -5,6 +5,8 @@ import authRouter from './routes/auth';
 import usersRouter from './routes/users';
 import clientsRouter from './routes/clients';
 import projectsRouter from './routes/projects';
+import timeEntriesRouter from './routes/timeEntries';
+import monthLocksRouter from './routes/monthLocks';
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/clients', clientsRouter);
 app.use('/api/v1/projects', projectsRouter);
+app.use('/api/v1/time-entries', timeEntriesRouter);
+app.use('/api/v1/month-locks', monthLocksRouter);
 
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
