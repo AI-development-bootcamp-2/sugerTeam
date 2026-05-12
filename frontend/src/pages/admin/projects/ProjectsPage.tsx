@@ -8,6 +8,7 @@ import {
 } from '../../../services/entities.service';
 import type { ProjectWithRelations } from '../../../types/entities';
 import Modal from '../../../components/Modal';
+import EmptyState from '../../../components/EmptyState';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 
 function formatDate(dateStr: string | null): string {
@@ -382,9 +383,7 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {!isLoading && filtered && filtered.length === 0 && (
-        <p className="text-gray-500">אין פרויקטים</p>
-      )}
+      {!isLoading && filtered && filtered.length === 0 && <EmptyState />}
 
       <CreateProjectModal
         isOpen={createOpen}

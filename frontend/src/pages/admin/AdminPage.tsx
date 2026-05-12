@@ -8,17 +8,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'מנהל',
 };
 
-function AbraLogoMark() {
-  return (
-    <svg viewBox="0 0 78 54" style={{ width: 64, height: 44, flexShrink: 0 }} aria-hidden="true">
-      <rect x="2" y="33" width="19" height="19" rx="6" transform="rotate(45 11.5 42.5)" fill="#F09A37" />
-      <circle cx="22.5" cy="27.5" r="9.5" fill="#F09A37" />
-      <rect x="28.5" y="3.5" width="19" height="19" transform="rotate(45 38 13)" fill="#F09A37" />
-      <rect x="42" y="18" width="19" height="19" rx="4" fill="#EA7693" />
-      <rect x="59" y="33" width="19" height="19" rx="6" transform="rotate(-45 68.5 42.5)" fill="#F09A37" />
-    </svg>
-  );
-}
 
 interface NavItemDef {
   to: string;
@@ -113,11 +102,8 @@ export function AdminPage() {
       {/* Sidebar */}
       <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto bg-[#141E3E] px-5 py-7 text-white">
         {/* Brand */}
-        <div dir="ltr" className="mb-3 flex items-center gap-3 border-b border-white/[0.06] pb-7">
-          <AbraLogoMark />
-          <span className="text-[38px] font-extrabold leading-none tracking-[-2px] text-white">
-            abra
-          </span>
+        <div dir="ltr" className="mb-3 flex justify-center border-b border-white/[0.06] pb-7">
+          <img src="/abra-logo.png" alt="Abra" className="h-7 w-auto" />
         </div>
 
         {/* Navigation */}

@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { UserRole as AuthRole } from '../../../types/auth';
 import type { User, UserRole } from '../../../types/entities';
 import Modal from '../../../components/Modal';
+import EmptyState from '../../../components/EmptyState';
 
 type RoleFilter = UserRole | 'ALL';
 
@@ -190,7 +191,7 @@ export default function UsersListPage() {
       {isLoading ? (
         <p className="py-8 text-center text-sm text-gray-500">טוען...</p>
       ) : !users?.length ? (
-        <p className="py-8 text-center text-sm text-gray-500">לא נמצאו משתמשים</p>
+        <EmptyState />
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-right">

@@ -10,6 +10,7 @@ import {
 import type { TaskWithProject } from '../../../types/entities';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import EmptyState from '../../../components/EmptyState';
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
@@ -422,9 +423,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {!isLoading && visibleTasks && visibleTasks.length === 0 && (
-        <p className="text-gray-500">אין משימות</p>
-      )}
+      {!isLoading && visibleTasks && visibleTasks.length === 0 && <EmptyState />}
 
       <CreateTaskModal
         isOpen={createOpen}
