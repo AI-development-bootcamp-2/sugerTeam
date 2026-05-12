@@ -31,14 +31,13 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
   const {
     register,
     handleSubmit,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<ProjectForm>({ defaultValues: { name: project.name } });
   const updateProject = useUpdateProject();
   const { data: managers } = useManagers();
   const { data: clients } = useActiveClients();
   const clientName = clients?.find((c) => c.id === project.clientId)?.name ?? '';
-  const startDate = watch('startDate');
 
   return (
     <form
@@ -102,8 +101,10 @@ function EditProjectForm({ project, onClose }: { project: ActiveProject; onClose
           <input
             type="date"
             {...register('endDate', {
-              validate: (val) =>
-                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+              validate: (val) => {
+                const startDate = getValues('startDate');
+                return !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה';
+              },
             })}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -191,14 +192,13 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
     register,
     handleSubmit,
     reset,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<ProjectForm>();
   const createProject = useCreateProject();
   const { data: managers } = useManagers();
   const { data: clients } = useActiveClients();
   const clientName = clients?.find((c) => c.id === clientId)?.name ?? '';
-  const startDate = watch('startDate');
 
   return (
     <form
@@ -262,8 +262,10 @@ function CreateProjectForm({ clientId, onClose }: { clientId: string; onClose: (
           <input
             type="date"
             {...register('endDate', {
-              validate: (val) =>
-                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+              validate: (val) => {
+                const startDate = getValues('startDate');
+                return !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה';
+              },
             })}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />

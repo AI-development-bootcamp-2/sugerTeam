@@ -29,13 +29,12 @@ function EditTaskForm({ task, clientId, onClose }: { task: ActiveTask; clientId:
   const {
     register,
     handleSubmit,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<TaskForm>({ defaultValues: { name: task.name } });
   const updateTask = useUpdateTask();
   const { data: projects } = useActiveProjects(clientId);
   const projectName = projects?.find((p) => p.id === task.projectId)?.name ?? '';
-  const startDate = watch('startDate');
 
   return (
     <form
@@ -83,8 +82,10 @@ function EditTaskForm({ task, clientId, onClose }: { task: ActiveTask; clientId:
           <input
             type="date"
             {...register('endDate', {
-              validate: (val) =>
-                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+              validate: (val) => {
+                const startDate = getValues('startDate');
+                return !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה';
+              },
             })}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -162,13 +163,12 @@ function CreateTaskForm({ projectId, clientId, onClose }: { projectId: string; c
     register,
     handleSubmit,
     reset,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<TaskForm>();
   const createTask = useCreateTask();
   const { data: projects } = useActiveProjects(clientId);
   const projectName = projects?.find((p) => p.id === projectId)?.name ?? '';
-  const startDate = watch('startDate');
 
   return (
     <form
@@ -216,8 +216,10 @@ function CreateTaskForm({ projectId, clientId, onClose }: { projectId: string; c
           <input
             type="date"
             {...register('endDate', {
-              validate: (val) =>
-                !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה',
+              validate: (val) => {
+                const startDate = getValues('startDate');
+                return !val || !startDate || val >= startDate || 'תאריך סיום חייב להיות אחרי תאריך התחלה';
+              },
             })}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
