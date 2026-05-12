@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import {
   useAllClients,
@@ -47,6 +47,7 @@ function CreateTaskModal({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<CreateTaskFormData>({
     defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' },
@@ -54,6 +55,14 @@ function CreateTaskModal({
   const watchedClientId = useWatch({ control, name: 'clientId' });
   const { data: projects } = useProjectsByClient(watchedClientId || undefined);
   const createTask = useCreateTask();
+
+  useEffect(() => {
+    if (isOpen) reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' });
+  }, [isOpen, defaultClientId, defaultProjectId, reset]);
+
+  useEffect(() => {
+    if (isOpen && projects && defaultProjectId) setValue('projectId', defaultProjectId);
+  }, [projects, isOpen, defaultProjectId, setValue]);
 
   const handleClose = () => {
     reset({ clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', startDate: '', endDate: '' });

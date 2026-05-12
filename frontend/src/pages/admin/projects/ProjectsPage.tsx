@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   useAllClients,
@@ -47,6 +47,10 @@ function CreateProjectModal({
     formState: { errors },
   } = useForm<CreateProjectForm>({ defaultValues: { clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' } });
   const createProject = useCreateProject();
+
+  useEffect(() => {
+    if (isOpen) reset({ clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' });
+  }, [isOpen, defaultClientId, reset]);
 
   const handleClose = () => {
     reset({ clientId: defaultClientId ?? '', name: '', startDate: '', endDate: '' });
