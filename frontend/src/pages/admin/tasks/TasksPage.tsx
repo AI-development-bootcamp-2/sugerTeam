@@ -305,6 +305,7 @@ function TaskRow({ task }: { task: TaskWithProject }) {
 export default function TasksPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
+  const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: clients } = useAllClients();
@@ -313,10 +314,13 @@ export default function TasksPage() {
 
   const visibleTasks = useMemo(() => {
     if (!tasks) return undefined;
-    if (selectedProjectId) return tasks;
-    if (selectedClientId) return tasks.filter((t) => t.project.client.id === selectedClientId);
-    return tasks;
-  }, [tasks, selectedClientId, selectedProjectId]);
+    const byClient = selectedProjectId
+      ? tasks
+      : selectedClientId
+        ? tasks.filter((t) => t.project.client.id === selectedClientId)
+        : tasks;
+    return search ? byClient.filter((t) => t.name.includes(search)) : byClient;
+  }, [tasks, selectedClientId, selectedProjectId, search]);
 
   const handleClientChange = (clientId: string) => {
     setSelectedClientId(clientId || undefined);
@@ -325,18 +329,9 @@ export default function TasksPage() {
 
   return (
     <div dir="rtl" className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">משימות</h1>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
-        >
-          + יצירה
-        </button>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold">משימות</h1>
 
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <select
           value={selectedClientId ?? ''}
           onChange={(e) => handleClientChange(e.target.value)}
@@ -349,7 +344,6 @@ export default function TasksPage() {
             </option>
           ))}
         </select>
-
         <select
           value={selectedProjectId ?? ''}
           onChange={(e) => setSelectedProjectId(e.target.value || undefined)}
@@ -363,6 +357,20 @@ export default function TasksPage() {
             </option>
           ))}
         </select>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="חיפוש משימה..."
+          className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+        >
+          + יצירה
+        </button>
       </div>
 
       {isLoading && <p className="text-gray-500">טוען...</p>}

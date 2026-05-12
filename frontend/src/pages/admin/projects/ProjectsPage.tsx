@@ -294,24 +294,18 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
 
 export default function ProjectsPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined);
+  const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const { data: clients } = useAllClients();
   const { data: projects, isLoading } = useAllProjects(selectedClientId);
 
+  const filtered = projects?.filter((p) => p.name.includes(search));
+
   return (
     <div dir="rtl" className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">פרויקטים</h1>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
-        >
-          + יצירה
-        </button>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold">פרויקטים</h1>
 
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-3">
         <select
           value={selectedClientId ?? ''}
           onChange={(e) => setSelectedClientId(e.target.value || undefined)}
@@ -324,11 +318,25 @@ export default function ProjectsPage() {
             </option>
           ))}
         </select>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="חיפוש פרויקט..."
+          className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+        >
+          + יצירה
+        </button>
       </div>
 
       {isLoading && <p className="text-gray-500">טוען...</p>}
 
-      {!isLoading && projects && projects.length > 0 && (
+      {!isLoading && filtered && filtered.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full">
             <thead className="bg-[#141E3E]">
@@ -343,7 +351,7 @@ export default function ProjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {filtered.map((project) => (
                 <ProjectRow key={project.id} project={project} />
               ))}
             </tbody>
@@ -351,7 +359,7 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {!isLoading && projects && projects.length === 0 && (
+      {!isLoading && filtered && filtered.length === 0 && (
         <p className="text-gray-500">אין פרויקטים</p>
       )}
 

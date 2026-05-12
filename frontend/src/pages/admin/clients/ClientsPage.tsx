@@ -190,16 +190,29 @@ function ClientRow({ client }: { client: Client }) {
 
 export default function ClientsPage() {
   const [createOpen, setCreateOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const { data: clients, isLoading } = useAllClients();
+
+  const filtered = clients?.filter((c) =>
+    c.name.includes(search) || (c.description ?? '').includes(search),
+  );
 
   return (
     <div dir="rtl" className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">לקוחות</h1>
+      <h1 className="mb-6 text-2xl font-bold">לקוחות</h1>
+
+      <div className="mb-4 flex items-center gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="חיפוש לקוח..."
+          className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
         >
           + יצירה
         </button>
@@ -207,7 +220,7 @@ export default function ClientsPage() {
 
       {isLoading && <p className="text-gray-500">טוען...</p>}
 
-      {clients && clients.length > 0 && (
+      {filtered && filtered.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
           <table className="w-full">
             <thead className="bg-[#141E3E]">
@@ -219,7 +232,7 @@ export default function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {clients.map((client) => (
+              {filtered.map((client) => (
                 <ClientRow key={client.id} client={client} />
               ))}
             </tbody>
@@ -227,7 +240,7 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {clients && clients.length === 0 && (
+      {!isLoading && filtered && filtered.length === 0 && (
         <p className="text-gray-500">אין לקוחות במערכת</p>
       )}
 

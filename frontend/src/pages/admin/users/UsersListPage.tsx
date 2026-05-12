@@ -154,30 +154,9 @@ export default function UsersListPage() {
 
   return (
     <main className="p-6" dir="rtl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">משתמשים</h1>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + משתמש חדש
-        </button>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">משתמשים</h1>
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="חיפוש לפי שם או דוא״ל..."
-          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:max-w-xs"
-        />
-      </div>
-
-      {/* Role filter pills */}
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex items-center gap-3">
         {ROLE_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -192,6 +171,20 @@ export default function UsersListPage() {
             {tab.label}
           </button>
         ))}
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="חיפוש לפי שם או דוא״ל..."
+          className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + משתמש חדש
+        </button>
       </div>
 
       {/* Table */}
