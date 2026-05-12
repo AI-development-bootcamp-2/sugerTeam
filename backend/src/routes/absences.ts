@@ -4,7 +4,12 @@ import multer from 'multer';
 import { AbsenceType, UserRole } from '@prisma/client';
 import { authenticateToken } from '@/middleware/auth';
 import { checkMonthLock } from '@/middleware/monthLock';
-import { uploadAbsenceDocument as uploadMiddleware, UnsupportedFileTypeError } from '@/middleware/upload';
+import {
+  uploadAbsenceDocument as uploadMiddleware,
+  UnsupportedFileTypeError,
+  verifyFileMagicBytes,
+} from '@/middleware/upload';
+import fs from 'fs/promises';
 import {
   createAbsence,
   updateAbsence,
@@ -57,10 +62,11 @@ const listQuerySchema = z.object({
 });
 
 function handleServiceError(err: unknown, res: Response, next: NextFunction): void {
-  if (err instanceof ValidationError) { res.status(err.status).json({ error: err.message }); return; }
-  if (err instanceof ForbiddenError)  { res.status(err.status).json({ error: err.message }); return; }
-  if (err instanceof NotFoundError)   { res.status(err.status).json({ error: err.message }); return; }
-  if (err instanceof MonthLockedError){ res.status(err.status).json({ error: err.message }); return; }
+  if (err instanceof ValidationError)        { res.status(err.status).json({ error: err.message }); return; }
+  if (err instanceof ForbiddenError)         { res.status(err.status).json({ error: err.message }); return; }
+  if (err instanceof NotFoundError)          { res.status(err.status).json({ error: err.message }); return; }
+  if (err instanceof MonthLockedError)       { res.status(err.status).json({ error: err.message }); return; }
+  if (err instanceof UnsupportedFileTypeError) { res.status(err.status).json({ error: err.message }); return; }
   next(err);
 }
 
@@ -180,6 +186,12 @@ router.post('/:id/document', runUpload, async (req: Request, res: Response, next
 
   const actor = req.user!;
   try {
+    const magicOk = await verifyFileMagicBytes(req.file.path, req.file.mimetype);
+    if (!magicOk) {
+      await fs.unlink(req.file.path).catch(() => undefined);
+      throw new UnsupportedFileTypeError('תוכן הקובץ אינו תואם לסוג שהוצהר');
+    }
+
     const document = await uploadAbsenceDocument(
       req.params.id,
       {

@@ -89,8 +89,27 @@ async function assertMonthUnlocked(date: Date, actorRole: UserRole): Promise<voi
   }
 }
 
+async function assertRangeUnlocked(
+  startDate: Date,
+  endDate: Date,
+  actorRole: UserRole,
+): Promise<void> {
+  if (actorRole === UserRole.ADMIN) return;
+  await assertMonthUnlocked(startDate, actorRole);
+  const startKey = startDate.getUTCFullYear() * 12 + startDate.getUTCMonth();
+  const endKey = endDate.getUTCFullYear() * 12 + endDate.getUTCMonth();
+  if (endKey !== startKey) {
+    await assertMonthUnlocked(endDate, actorRole);
+  }
+}
+
+export type AbsenceDocumentSummary = Pick<
+  AbsenceDocument,
+  'id' | 'fileName' | 'mimeType' | 'uploadedAt'
+>;
+
 export type AbsenceWithDocument = AbsenceReport & {
-  documents: AbsenceDocument[];
+  documents: AbsenceDocumentSummary[];
 };
 
 export type AbsenceResponse = AbsenceReport & {
@@ -124,7 +143,7 @@ export async function createAbsence(
     throw new ValidationError('תאריך סיום חייב להיות אחרי תאריך ההתחלה');
   }
 
-  await assertMonthUnlocked(startDate, actorRole);
+  await assertRangeUnlocked(startDate, endDate, actorRole);
 
   const calculatedAbsenceDays = calculateAbsenceDays(startDate, endDate);
 
@@ -180,7 +199,7 @@ export async function updateAbsence(
 ): Promise<AbsenceResponse> {
   const existing = await loadOwnedAbsence(id, actorUserId, actorRole);
 
-  await assertMonthUnlocked(existing.startDate, actorRole);
+  await assertRangeUnlocked(existing.startDate, existing.endDate, actorRole);
 
   const nextStart =
     data.startDate !== undefined ? toDate(data.startDate, 'תאריך התחלה') : existing.startDate;
@@ -191,8 +210,10 @@ export async function updateAbsence(
     throw new ValidationError('תאריך סיום חייב להיות אחרי תאריך ההתחלה');
   }
 
-  if (data.startDate !== undefined && nextStart.getTime() !== existing.startDate.getTime()) {
-    await assertMonthUnlocked(nextStart, actorRole);
+  const startMoved = nextStart.getTime() !== existing.startDate.getTime();
+  const endMoved = nextEnd.getTime() !== existing.endDate.getTime();
+  if (startMoved || endMoved) {
+    await assertRangeUnlocked(nextStart, nextEnd, actorRole);
   }
 
   const datesChanged =
@@ -229,7 +250,7 @@ export async function deleteAbsence(
   actorRole: UserRole,
 ): Promise<void> {
   const existing = await loadOwnedAbsence(id, actorUserId, actorRole);
-  await assertMonthUnlocked(existing.startDate, actorRole);
+  await assertRangeUnlocked(existing.startDate, existing.endDate, actorRole);
 
   await prisma.$transaction([
     prisma.absenceDocument.deleteMany({ where: { absenceReportId: id } }),
@@ -252,7 +273,11 @@ export async function listAbsences(
       startDate: { lte: monthEnd },
       endDate: { gte: monthStart },
     },
-    include: { documents: true },
+    include: {
+      documents: {
+        select: { id: true, fileName: true, mimeType: true, uploadedAt: true },
+      },
+    },
     orderBy: { startDate: 'asc' },
   });
 }
@@ -260,7 +285,11 @@ export async function listAbsences(
 export async function getAbsenceById(id: string): Promise<AbsenceWithDocument | null> {
   return prisma.absenceReport.findFirst({
     where: { id, deletedAt: null },
-    include: { documents: true },
+    include: {
+      documents: {
+        select: { id: true, fileName: true, mimeType: true, uploadedAt: true },
+      },
+    },
   });
 }
 
@@ -277,6 +306,7 @@ export async function uploadAbsenceDocument(
   actorRole: UserRole,
 ): Promise<AbsenceDocument> {
   const absence = await loadOwnedAbsence(absenceId, actorUserId, actorRole);
+  await assertRangeUnlocked(absence.startDate, absence.endDate, actorRole);
 
   const existing = await prisma.absenceDocument.findFirst({
     where: { absenceReportId: absenceId },
@@ -314,6 +344,7 @@ export async function deleteAbsenceDocument(
   actorRole: UserRole,
 ): Promise<void> {
   const absence = await loadOwnedAbsence(absenceId, actorUserId, actorRole);
+  await assertRangeUnlocked(absence.startDate, absence.endDate, actorRole);
 
   const existing = await prisma.absenceDocument.findFirst({
     where: { absenceReportId: absenceId },

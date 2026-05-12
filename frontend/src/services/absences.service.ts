@@ -6,11 +6,8 @@ import type { AbsenceType, AbsenceStatus } from '../types/time-report';
 
 export interface AbsenceDocumentDto {
   id: string;
-  absenceReportId: string;
   fileName: string;
   mimeType: string;
-  storagePath?: string;
-  uploadedBy?: string;
   uploadedAt: string;
 }
 
