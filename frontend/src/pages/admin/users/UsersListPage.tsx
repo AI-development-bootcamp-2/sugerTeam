@@ -7,6 +7,7 @@ import { ROLE_LABELS } from './userConstants';
 import { useAuthStore } from '../../../store/authStore';
 import { UserRole as AuthRole } from '../../../types/auth';
 import type { User, UserRole } from '../../../types/entities';
+import Modal from '../../../components/Modal';
 
 type RoleFilter = UserRole | 'ALL';
 
@@ -87,34 +88,32 @@ function UserRow({ user, onEdit }: UserRowProps) {
         </td>
       </tr>
 
-      {confirmAction === 'deactivate' && (
-        <tr className="bg-amber-50">
-          <td colSpan={5} className="px-4 py-3">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-amber-800">האם להשבית משתמש זה? הוא לא יוכל להתחבר למערכת.</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    deactivateUser.mutate(user.id, { onSuccess: () => setConfirmAction(null) });
-                  }}
-                  disabled={deactivateUser.isPending}
-                  className="rounded-md bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700 disabled:opacity-50"
-                >
-                  אישור
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction(null)}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-xs hover:bg-white"
-                >
-                  ביטול
-                </button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
+      <Modal
+        isOpen={confirmAction === 'deactivate'}
+        onClose={() => setConfirmAction(null)}
+        title="השבתת משתמש"
+      >
+        <p className="mb-5 text-sm text-gray-600">האם להשבית משתמש זה? הוא לא יוכל להתחבר למערכת.</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              deactivateUser.mutate(user.id, { onSuccess: () => setConfirmAction(null) });
+            }}
+            disabled={deactivateUser.isPending}
+            className="flex-1 rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            אישור
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmAction(null)}
+            className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            ביטול
+          </button>
+        </div>
+      </Modal>
     </>
   );
 }
@@ -181,9 +180,9 @@ export default function UsersListPage() {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
         >
-          + משתמש חדש
+          + יצירה
         </button>
       </div>
 
