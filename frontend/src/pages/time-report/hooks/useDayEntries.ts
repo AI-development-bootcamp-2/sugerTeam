@@ -61,7 +61,7 @@ function buildAbsenceMap(absences: AbsenceDto[]): Map<string, AbsenceType> {
 
   for (const absence of absences) {
     const end = parseLocalDate(absence.endDate);
-    let cursor = parseLocalDate(absence.startDate);
+    const cursor = parseLocalDate(absence.startDate);
 
     while (cursor <= end) {
       map.set(toDateString(cursor), absence.absenceType);

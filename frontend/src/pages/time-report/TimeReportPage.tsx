@@ -85,12 +85,16 @@ export default function TimeReportPage() {
     refetch,
   } = useTimeReportData(user?.id ?? '', selectedYear, selectedMonth);
 
-  // T034 — dismissible absence-error banner; resets whenever a new absence error appears.
-  const [absenceBannerDismissed, setAbsenceBannerDismissed] = useState(false);
-  const dismissAbsenceBanner = useCallback(() => setAbsenceBannerDismissed(true), []);
-  useEffect(() => {
-    if (hasAbsenceError) setAbsenceBannerDismissed(false);
-  }, [hasAbsenceError]);
+  // T034 — dismissible absence-error banner.
+  // Keyed to the selected month: dismissal is per-month, so navigating to a new
+  // month naturally resets the banner without any effect-based state mutation.
+  const [absenceBannerDismissedForMonth, setAbsenceBannerDismissedForMonth] = useState<string | null>(null);
+  const currentMonthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+  const dismissAbsenceBanner = useCallback(
+    () => setAbsenceBannerDismissedForMonth(currentMonthKey),
+    [currentMonthKey],
+  );
+  const showAbsenceBanner = hasAbsenceError && absenceBannerDismissedForMonth !== currentMonthKey;
 
   function handleLogout() {
     clearAuth();
@@ -171,7 +175,7 @@ export default function TimeReportPage() {
             <LockedMonthBanner isLocked={isLocked} />
 
             {/* T034 — Partial failure: absence data degradation banner */}
-            {hasAbsenceError && !absenceBannerDismissed && (
+            {showAbsenceBanner && (
               <div
                 style={{
                   background: '#FFF6DB',
