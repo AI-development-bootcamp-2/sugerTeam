@@ -11,7 +11,13 @@ import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
 import LockedMonthBanner from './components/LockedMonthBanner';
 import DailyReportDrawer from './components/DailyReportDrawer';
+import TimerCompletionDialog from './components/TimerCompletionDialog';
 import { AbsenceFormDrawer } from '../absences/components/AbsenceFormDrawer';
+import type { StoppedTimerDto } from '../../types/time-report';
+import type { EntryPayload } from '../../types/timeEntries';
+import { useTimer } from './hooks/useTimer';
+import { useUpsertDayReport } from './hooks/useTimeEntries';
+import { buildDayPayload, formatDate } from './utils/timeUtils';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -91,6 +97,49 @@ export default function TimeReportPage() {
     refetch,
   } = useTimeEntriesData(selectedYear, selectedMonth);
 
+  // ─── Timer ────────────────────────────────────────────────────────────────
+  const { timerState, startTimer, stopTimer, isStarting, isStopping } = useTimer();
+  const upsertDayReport = useUpsertDayReport();
+  const [completionData, setCompletionData] = useState<StoppedTimerDto | null>(null);
+
+  const timerDate = completionData ? formatDate(new Date(completionData.stoppedAt)) : null;
+  const timerDayEntries = timerDate
+    ? (monthlyDays.find((d) => d.reportDate === timerDate)?.entries ?? [])
+    : [];
+
+  async function handleTimerClick() {
+    try {
+      if (timerState.isRunning) {
+        const stopped = await stopTimer();
+        setCompletionData(stopped);
+      } else {
+        await startTimer();
+      }
+    } catch {
+      // errors available via useTimer's startError / stopError
+    }
+  }
+
+  async function handleTimerConfirm(payload: EntryPayload) {
+    if (!completionData) return;
+    const today = formatDate(new Date(completionData.stoppedAt));
+    const existingDay = monthlyDays.find((d) => d.reportDate === today);
+    try {
+      await upsertDayReport.mutateAsync(
+        buildDayPayload(
+          payload,
+          today,
+          existingDay,
+          new Date(completionData.startedAt),
+          new Date(completionData.stoppedAt),
+        ),
+      );
+      setCompletionData(null);
+    } catch {
+      // error shown in dialog via upsertDayReport.isError
+    }
+  }
+
   // ─── Daily-report drawer ──────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -121,7 +170,13 @@ export default function TimeReportPage() {
 
   return (
     <>
-      <AppHeader onLogout={handleLogout} onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }} />
+      <AppHeader
+        onLogout={handleLogout}
+        onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }}
+        timerState={timerState}
+        onTimerClick={() => { void handleTimerClick(); }}
+        isTimerLoading={isStarting || isStopping}
+      />
 
       <main
         dir="rtl"
@@ -278,6 +333,21 @@ export default function TimeReportPage() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
       />
+
+      {completionData && (
+        <TimerCompletionDialog
+          stoppedTimer={completionData}
+          existingDayEntries={timerDayEntries}
+          onConfirm={handleTimerConfirm}
+          onOpenFullForm={() => {
+            setSelectedDate(timerDate);
+            setCompletionData(null);
+          }}
+          onClose={() => setCompletionData(null)}
+          isSubmitting={upsertDayReport.isPending}
+          submitError={upsertDayReport.isError ? 'שגיאה בשמירת הרשומה. נסה שנית.' : null}
+        />
+      )}
 
       <AbsenceFormDrawer
         open={absenceDrawerOpen}
