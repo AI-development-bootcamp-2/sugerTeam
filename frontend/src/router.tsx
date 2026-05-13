@@ -11,6 +11,7 @@ import ClientsPage from './pages/admin/clients/ClientsPage';
 import UsersListPage from './pages/admin/users/UsersListPage';
 import ProjectsPage from './pages/admin/projects/ProjectsPage';
 import TasksPage from './pages/admin/tasks/TasksPage';
+import TaskAssignmentPage from './pages/admin/taskAssignments/TaskAssignmentPage';
 import { SelectViewPage } from './pages/select-view/SelectViewPage';
 import TimeReportPage from './pages/time-report/TimeReportPage';
 
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
           { path: 'clients', element: <ClientsPage /> },
           { path: 'projects', element: <ProjectsPage /> },
           { path: 'tasks', element: <TasksPage /> },
+          { path: 'task-assignments', element: <TaskAssignmentPage /> },
         ],
       },
     ],

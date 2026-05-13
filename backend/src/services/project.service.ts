@@ -41,7 +41,6 @@ export async function listAllProjects(): Promise<Project[]> {
 }
 
 export type ProjectWithManager = Project & {
-  primaryManager: { id: string; fullName: string; role: string } | null;
   client: { id: string; name: string };
 };
 
@@ -49,7 +48,6 @@ export async function listProjectsByClient(clientId?: string): Promise<ProjectWi
   return prisma.project.findMany({
     where: clientId ? { clientId } : undefined,
     include: {
-      primaryManager: { select: { id: true, fullName: true, role: true } },
       client: { select: { id: true, name: true } },
     },
     orderBy: { name: 'asc' },

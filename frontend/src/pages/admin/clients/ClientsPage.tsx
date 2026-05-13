@@ -133,9 +133,11 @@ function ClientRow({ client }: { client: Client }) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
-        <td className="px-4 py-3 text-sm font-medium">{client.name}</td>
-        <td className="px-4 py-3 text-sm text-gray-500">
-          <div className="w-40 truncate" title={client.description ?? undefined}>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm font-medium">{client.name}</div>
+        </td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm text-gray-500" title={client.description ?? undefined}>
             {client.description ?? '—'}
           </div>
         </td>
@@ -153,22 +155,18 @@ function ClientRow({ client }: { client: Client }) {
             <button
               type="button"
               onClick={() => setEditOpen(true)}
-              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              className="rounded-md p-1.5 hover:bg-gray-100"
               aria-label="ערוך"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 0 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
+              <img src="/edit-logo.png" className="h-4 w-4" alt="" />
             </button>
             <button
               type="button"
               onClick={() => setConfirmOpen(true)}
-              className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+              className="rounded-md p-1.5 hover:bg-red-50"
               aria-label="השבת"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16" />
-              </svg>
+              <img src="/delete-logo.png" className="h-4 w-4" alt="" />
             </button>
           </div>
         </td>
@@ -228,13 +226,13 @@ export default function ClientsPage() {
 
       {filtered && filtered.length > 0 && (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם לקוח</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תיאור</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
+                <th className="w-[18%] px-4 py-2 text-start text-sm font-semibold text-white">שם לקוח</th>
+                <th className="w-[62%] px-4 py-2 text-start text-sm font-semibold text-white">תיאור</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>
