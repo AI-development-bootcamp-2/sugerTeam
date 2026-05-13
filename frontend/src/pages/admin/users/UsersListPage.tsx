@@ -46,9 +46,15 @@ function UserRow({ user, onEdit }: UserRowProps) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
-        <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.fullName}</td>
-        <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
-        <td className="px-4 py-3 text-sm text-gray-600">{ROLE_LABELS[user.role]}</td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm font-medium text-gray-900">{user.fullName}</div>
+        </td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm text-gray-600">{user.email}</div>
+        </td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm text-gray-600">{ROLE_LABELS[user.role]}</div>
+        </td>
         <td className="px-4 py-3">
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -63,26 +69,29 @@ function UserRow({ user, onEdit }: UserRowProps) {
             <button
               type="button"
               onClick={() => onEdit(user)}
-              className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+              className="rounded-md p-1.5 hover:bg-gray-100"
+              aria-label="ערוך"
             >
-              ערוך
+              <img src="/edit-logo.png" className="h-4 w-4" alt="" />
             </button>
             {isActive ? (
               <button
                 type="button"
                 onClick={() => setConfirmAction('deactivate')}
-                className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
+                className="rounded-md p-1.5 hover:bg-red-50"
+                aria-label="השבת"
               >
-                השבת
+                <img src="/delete-logo.png" className="h-4 w-4" alt="" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => activateUser.mutate(user.id)}
                 disabled={activateUser.isPending}
-                className="rounded-md border border-green-300 px-3 py-1 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+                className="rounded-md p-1.5 hover:bg-green-50 disabled:opacity-50"
+                aria-label="הפעל"
               >
-                הפעל
+                <img src="/edit-logo.png" className="h-4 w-4" alt="" />
               </button>
             )}
           </div>
@@ -175,7 +184,7 @@ export default function UsersListPage() {
           type="search"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="חיפוש לפי שם או דוא״ל..."
+          placeholder="חיפוש משתמש..."
           className="ms-auto w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
@@ -194,14 +203,14 @@ export default function UsersListPage() {
         <EmptyState />
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-right">
+          <table className="w-full table-fixed text-right">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם מלא</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">דוא״ל</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תפקיד</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
+                <th className="w-[25%] px-4 py-2 text-start text-sm font-semibold text-white">שם מלא</th>
+                <th className="w-[35%] px-4 py-2 text-start text-sm font-semibold text-white">דוא״ל</th>
+                <th className="w-[20%] px-4 py-2 text-start text-sm font-semibold text-white">תפקיד</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>

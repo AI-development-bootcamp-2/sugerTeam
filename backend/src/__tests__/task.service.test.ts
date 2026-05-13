@@ -23,7 +23,6 @@ const mockProject = {
   description: null,
   startDate: null,
   endDate: null,
-  primaryManagerId: null,
   status: 'ACTIVE' as const,
   createdAt: new Date(),
   updatedAt: new Date(),
