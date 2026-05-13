@@ -268,9 +268,8 @@ export default function TimeReportPage() {
 
             {/* KPI strip */}
             <KpiStrip
-              reportedMinutes={monthlySummary.reportedMinutes}
-              standardMinutes={monthlySummary.standardMinutes}
-              completionPct={monthlySummary.completionPct}
+              monthlySummary={monthlySummary}
+              dayEntries={dayEntries}
               isLoading={isLoading}
               onOpen={openDrawer}
             />
