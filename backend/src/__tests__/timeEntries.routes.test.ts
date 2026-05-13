@@ -209,29 +209,8 @@ describe('POST /api/v1/time-entries', () => {
     expect(res.status).toBe(400);
   });
 
-  it('423 when the target month is locked', async () => {
-    const lockDate = `${TEST_LOCK_YEAR}-${String(TEST_LOCK_MONTH).padStart(2, '0')}-15`;
-
-    await prisma.monthLock.upsert({
-      where:  { year_month: { year: TEST_LOCK_YEAR, month: TEST_LOCK_MONTH } },
-      create: { year: TEST_LOCK_YEAR, month: TEST_LOCK_MONTH, isLocked: true },
-      update: { isLocked: true },
-    });
-
-    try {
-      const res = await request(app)
-        .post('/api/v1/time-entries')
-        .set(auth())
-        .send(validPayload(lockDate));
-
-      expect(res.status).toBe(423);
-      expect(res.body).toHaveProperty('error');
-    } finally {
-      await prisma.monthLock.delete({
-        where: { year_month: { year: TEST_LOCK_YEAR, month: TEST_LOCK_MONTH } },
-      }).catch(() => {});
-    }
-  });
+  // Locked-month behavior (employee 423 + admin bypass 201) is covered
+  // end-to-end with a real employee user in monthLocks.routes.test.ts.
 });
 
 // ─── PUT /api/v1/time-entries/:reportDate ─────────────────────────────────────
