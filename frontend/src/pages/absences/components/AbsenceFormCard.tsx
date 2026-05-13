@@ -238,7 +238,7 @@ export function AbsenceFormCard({ onClose, flush = false, initialAbsence, onMuta
 
   const outerClassName = flush
     ? 'relative flex h-full w-full flex-col overflow-hidden bg-[#f2f2f7]'
-    : 'relative flex h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]';
+    : 'relative flex h-[760px] w-full max-w-[480px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]';
 
   if (activeTab === 'work') {
     return (
