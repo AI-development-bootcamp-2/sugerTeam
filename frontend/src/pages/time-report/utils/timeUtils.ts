@@ -1,6 +1,5 @@
-import type { TimeEntryDto, EntryPayload, DayDto, DayReportPayload } from '../../../types/timeEntries';
+import type { TimeEntryDto, EntryPayload } from '../../../types/timeEntries';
 import type { WorkLocation } from '../../../types/time-report';
-import { DailyReportStatus } from '../../../types/time-report';
 
 export function formatElapsed(seconds: number): string {
   const h  = Math.floor(seconds / 3600);
@@ -46,39 +45,3 @@ export function entryDtoToPayload(dto: TimeEntryDto): EntryPayload {
   };
 }
 
-// T013 — pure merge logic consumed by TimeReportPage.handleTimerConfirm
-export function buildDayPayload(
-  newEntry: EntryPayload,
-  today: string,
-  existingDay: DayDto | undefined,
-  timerStart: Date,
-  timerStop: Date,
-): DayReportPayload {
-  const timerStartHHMM = formatTime(timerStart);
-  const timerStopHHMM  = formatTime(timerStop);
-
-  let startTime = timerStartHHMM;
-  let endTime   = timerStopHHMM;
-
-  if (existingDay?.startTime) {
-    startTime = toMin(existingDay.startTime) <= toMin(timerStartHHMM)
-      ? existingDay.startTime
-      : timerStartHHMM;
-  }
-  if (existingDay?.endTime) {
-    endTime = toMin(existingDay.endTime) >= toMin(timerStopHHMM)
-      ? existingDay.endTime
-      : timerStopHHMM;
-  }
-
-  return {
-    reportDate: today,
-    startTime,
-    endTime,
-    status:  existingDay?.status  ?? DailyReportStatus.DRAFT,
-    entries: [
-      ...(existingDay?.entries ?? []).map(entryDtoToPayload),
-      newEntry,
-    ],
-  };
-}

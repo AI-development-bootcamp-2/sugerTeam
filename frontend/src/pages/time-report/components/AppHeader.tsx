@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { TimerState } from '../../../types/time-report';
 import { formatElapsed } from '../utils/timeUtils';
 
@@ -7,6 +8,7 @@ interface AppHeaderProps {
   timerState: TimerState;
   onTimerClick: () => void;
   isTimerLoading?: boolean;
+  centerSlot?: ReactNode;
 }
 
 function LogoutIcon() {
@@ -67,6 +69,7 @@ export default function AppHeader({
   timerState,
   onTimerClick,
   isTimerLoading = false,
+  centerSlot,
 }: AppHeaderProps) {
   const { isRunning, elapsedSeconds } = timerState;
   const isLongRunning = isRunning && elapsedSeconds >= LONG_RUNNING_THRESHOLD;
@@ -89,6 +92,7 @@ export default function AppHeader({
     >
       <div
         style={{
+          position: 'relative',
           maxWidth: 1120,
           margin: '0 auto',
           height: '100%',
@@ -98,10 +102,30 @@ export default function AppHeader({
           justifyContent: 'space-between',
         }}
       >
-        {/* Logo — RTL start (right) */}
-        <span style={{ fontWeight: 800, fontSize: 28, color: '#141E3E', letterSpacing: -0.5 }}>
-          abra
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <img
+            src="/abra-logo-black.png"
+            alt="Abra"
+            style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+          />
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#212525' }}>
+            דיווח שעות
+          </h1>
+        </div>
+
+        {centerSlot && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'auto',
+            }}
+          >
+            {centerSlot}
+          </div>
+        )}
 
         {/* Action buttons — RTL end (left) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -155,7 +179,7 @@ export default function AppHeader({
             style={{ ...pillBase, background: '#F09A37', color: '#FFFFFF' }}
           >
             <PlusCircleIcon />
-            הוספת יום
+            דיווח ידני
           </button>
 
           <button

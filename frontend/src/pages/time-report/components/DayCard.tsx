@@ -13,7 +13,7 @@ interface DayCardProps {
   actionSlot?: ReactNode;
 }
 
-const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const HEBREW_DAYS = ['יום א׳', 'יום ב׳', 'יום ג׳', 'יום ד׳', 'יום ה׳', 'יום ו׳', 'שבת'];
 
 function formatDate(dateStr: string, dayOfWeek: number): string {
   const [year, month, day] = dateStr.split('-');
@@ -96,7 +96,7 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
           userSelect: 'none',
         }}
       >
-        {/* Right group — RTL start (briefcase + date + status tag) */}
+        {/* Right group — RTL start (briefcase + date) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
             style={{
@@ -115,16 +115,16 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
           <span style={{ fontSize: 20, fontWeight: 700, color: '#212525' }}>
             {formatDate(dayEntry.date, dayEntry.dayOfWeek)}
           </span>
+        </div>
+
+        {/* Left group — RTL end (status + chevron) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {dayEntry.displayStatus && (
             <StatusTag
               status={dayEntry.displayStatus}
               reportedMinutes={dayEntry.reportedMinutes}
             />
           )}
-        </div>
-
-        {/* Left group — RTL end (chevron only) */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
           {isInteractive && <ChevronIcon expanded={isExpanded} />}
         </div>
       </div>
@@ -215,6 +215,7 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
             entry={entry}
             isLocked={isLocked}
             isLast={i === dayEntry.entries.length - 1}
+            onEdit={onOpenReport}
           />
         ))}
 

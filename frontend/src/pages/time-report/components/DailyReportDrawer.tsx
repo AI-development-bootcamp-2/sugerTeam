@@ -69,6 +69,10 @@ const formSchema = z
   });
 
 export type DayReportFormValues = z.infer<typeof formSchema>;
+export interface InitialTimeEntryDefaults {
+  startTime: string;
+  endTime: string;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,35 +82,46 @@ function toMin(hhmm: string): number {
   return h * 60 + m;
 }
 
-const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+function buildDefaultValues(
+  existingReport: DayDto | null,
+  initialTimeEntry?: InitialTimeEntryDefaults | null,
+): DayReportFormValues {
+  const initialEntry = initialTimeEntry
+    ? blankEntry(initialTimeEntry.startTime, initialTimeEntry.endTime)
+    : null;
 
-function formatHebrewDate(iso: string): string {
-  const d = new Date(`${iso}T00:00:00`);
-  const day   = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year  = d.getFullYear();
-  const dow   = HEBREW_DAYS[d.getDay()];
-  return `יום ${dow}, ${day}/${month}/${year}`;
-}
+  if (existingReport?.startTime) {
+    const reportEntries = existingReport.entries.length > 0
+      ? existingReport.entries.map((e) => ({
+          workLocation: e.workLocation as 'OFFICE' | 'CLIENT' | 'HOME',
+          clientId:     e.clientId,
+          projectId:    e.projectId,
+          taskId:       e.taskId,
+          startTime:    e.startTime,
+          endTime:      e.endTime,
+          description:  e.description ?? '',
+        }))
+      : [];
 
-function buildDefaultValues(existingReport: DayDto | null): DayReportFormValues {
-  if (existingReport?.startTime && existingReport.status === DailyReportStatus.DRAFT) {
     return {
-      dayStartTime: existingReport.startTime,
-      dayEndTime:   existingReport.endTime ?? '17:00',
-      entries: existingReport.entries.length > 0
-        ? existingReport.entries.map((e) => ({
-            workLocation: e.workLocation as 'OFFICE' | 'CLIENT' | 'HOME',
-            clientId:     e.clientId,
-            projectId:    e.projectId,
-            taskId:       e.taskId,
-            startTime:    e.startTime,
-            endTime:      e.endTime,
-            description:  e.description ?? '',
-          }))
-        : [blankEntry('08:00', '17:00')],
+      dayStartTime: initialTimeEntry && toMin(initialTimeEntry.startTime) < toMin(existingReport.startTime)
+        ? initialTimeEntry.startTime
+        : existingReport.startTime,
+      dayEndTime: initialTimeEntry && toMin(initialTimeEntry.endTime) > toMin(existingReport.endTime ?? '17:00')
+        ? initialTimeEntry.endTime
+        : existingReport.endTime ?? '17:00',
+      entries: initialEntry ? [...reportEntries, initialEntry] : reportEntries.length > 0 ? reportEntries : [blankEntry('08:00', '17:00')],
     };
   }
+
+  if (initialTimeEntry) {
+    return {
+      dayStartTime: initialTimeEntry.startTime,
+      dayEndTime:   initialTimeEntry.endTime,
+      entries: [initialEntry ?? blankEntry(initialTimeEntry.startTime, initialTimeEntry.endTime)],
+    };
+  }
+
   return {
     dayStartTime: '08:00',
     dayEndTime:   '17:00',
@@ -135,6 +150,7 @@ interface DailyReportDrawerProps {
   onClose:        () => void;
   existingReport: DayDto | null;
   isMonthLocked:  boolean;
+  initialTimeEntry?: InitialTimeEntryDefaults | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -145,9 +161,9 @@ export default function DailyReportDrawer({
   onClose,
   existingReport,
   isMonthLocked,
+  initialTimeEntry = null,
 }: DailyReportDrawerProps) {
-  const isReadOnly =
-    isMonthLocked || existingReport?.status === DailyReportStatus.SUBMITTED;
+  const isReadOnly = isMonthLocked;
 
   const { data: dropdownData } = useDropdownData();
   const upsert = useUpsertDayReport();
@@ -157,7 +173,7 @@ export default function DailyReportDrawer({
 
   const methods = useForm<DayReportFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: buildDefaultValues(existingReport),
+    defaultValues: buildDefaultValues(existingReport, initialTimeEntry),
   });
 
   const { control, handleSubmit, reset, formState: { isDirty, isSubmitting, errors } } = methods;
@@ -166,9 +182,9 @@ export default function DailyReportDrawer({
   // Reset form when the drawer opens for a new date
   useEffect(() => {
     if (isOpen) {
-      reset(buildDefaultValues(existingReport));
+      reset(buildDefaultValues(existingReport, initialTimeEntry));
     }
-  }, [isOpen, date]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, date, initialTimeEntry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function guardedClose() {
     if (isDirty && !window.confirm('יש שינויים שלא נשמרו. לצאת בכל זאת?')) return;
@@ -272,7 +288,7 @@ export default function DailyReportDrawer({
 
           {/* Title */}
           <span style={{ fontSize: 17, fontWeight: 700, color: '#212525' }}>
-            דוח יומי — {formatHebrewDate(date)}
+            דיווח ידני
           </span>
 
           {/* Action buttons */}
@@ -326,7 +342,7 @@ export default function DailyReportDrawer({
         {/* ── Read-only banner ────────────────────────────────────────────── */}
         {isReadOnly && (
           <div style={{ background: '#FCE3D6', padding: '10px 16px', fontSize: 14, fontWeight: 600, color: '#E7000B', textAlign: 'center', flexShrink: 0 }}>
-            {isMonthLocked ? 'חודש זה נעול. לא ניתן לערוך דוחות.' : 'הדוח הוגש. לעריכה פנה לאחראי צוות.'}
+            חודש זה נעול. לא ניתן לערוך דוחות.
           </div>
         )}
 

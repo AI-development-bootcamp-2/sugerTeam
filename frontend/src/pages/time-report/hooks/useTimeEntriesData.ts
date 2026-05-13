@@ -60,11 +60,17 @@ function buildAbsenceMap(absences: AbsenceWithDocumentsDto[]): Map<string, Absen
       const y = cursor.getUTCFullYear();
       const mo = String(cursor.getUTCMonth() + 1).padStart(2, '0');
       const da = String(cursor.getUTCDate()).padStart(2, '0');
-      map.set(`${y}-${mo}-${da}`, {
-        absenceId: absence.id,
-        absenceType: absence.absenceType,
-        isPartial: absence.isPartial,
-      });
+      const key = `${y}-${mo}-${da}`;
+      const existing = map.get(key);
+      // When the same day is covered by multiple absences, prefer a partial
+      // one so the "+ הוסף רשומה" CTA stays available on partial days.
+      if (!existing || (!existing.isPartial && absence.isPartial)) {
+        map.set(key, {
+          absenceId: absence.id,
+          absenceType: absence.absenceType,
+          isPartial: absence.isPartial,
+        });
+      }
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
   }
@@ -154,8 +160,8 @@ export function useTimeEntriesData(year: number, month: number): UseTimeEntriesD
     monthlySummary,
     absences,
     isLocked:  lockQuery.data?.isLocked ?? false,
-    isLoading: daysQuery.isPending || lockQuery.isPending,
-    isError:   daysQuery.isError   || lockQuery.isError,
+    isLoading: daysQuery.isPending || lockQuery.isPending || (absencesQuery.isPending && absencesQuery.fetchStatus !== 'idle'),
+    isError:   daysQuery.isError   || lockQuery.isError   || absencesQuery.isError,
     refetch() {
       void daysQuery.refetch();
       void lockQuery.refetch();

@@ -27,6 +27,16 @@ export class LockedError extends Error {
   }
 }
 
+export class ValidationError extends Error {
+  status = 422;
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+const DEFAULT_STANDARD_HOURS = 9;
+
 // ─── Input types ──────────────────────────────────────────────────────────────
 
 export interface EntryInput {
@@ -92,6 +102,40 @@ async function assertMonthNotLocked(year: number, month: number): Promise<void> 
   });
   if (lock?.isLocked) {
     throw new LockedError('החודש נעול, לא ניתן לבצע שינויים');
+  }
+}
+
+async function assertCompatibleWithAbsence(
+  userId: string,
+  reportDate: Date,
+  totalEntryMinutes: number,
+): Promise<void> {
+  const absence = await prisma.absenceReport.findFirst({
+    where: {
+      userId,
+      deletedAt: null,
+      startDate: { lte: reportDate },
+      endDate:   { gte: reportDate },
+    },
+    select: { isPartial: true, partialDurationHours: true },
+  });
+  if (!absence) return;
+
+  if (!absence.isPartial) {
+    throw new ValidationError('לא ניתן לדווח שעות ביום של היעדרות מלאה');
+  }
+
+  const calendarDay = await prisma.workCalendarDay.findUnique({
+    where: { date: reportDate },
+    select: { standardHours: true },
+  });
+  const standardHours = calendarDay ? Number(calendarDay.standardHours) : DEFAULT_STANDARD_HOURS;
+  const partialHours = Number(absence.partialDurationHours ?? 0);
+  const allowedMinutes = Math.max(0, Math.round((standardHours - partialHours) * 60));
+  if (totalEntryMinutes > allowedMinutes) {
+    throw new ValidationError(
+      `סך השעות המדווחות חורג מהמותר ביום היעדרות חלקית (מקסימום ${(allowedMinutes / 60).toFixed(2)} שעות)`,
+    );
   }
 }
 
@@ -175,10 +219,6 @@ export async function upsertDayReport(userId: string, data: DayReportInput) {
     where: { userId, reportDate: reportDateObj, deletedAt: null },
   });
 
-  if (existing?.status === DailyReportStatus.SUBMITTED) {
-    throw new ConflictError('הדוח כבר הוגש ולא ניתן לעריכה');
-  }
-
   const dayStartTime = parseTimeUTC(data.startTime);
   const dayEndTime   = parseTimeUTC(data.endTime);
 
@@ -192,6 +232,9 @@ export async function upsertDayReport(userId: string, data: DayReportInput) {
     durationMinutes: toMinutes(e.endTime) - toMinutes(e.startTime),
     description:     e.description ?? null,
   }));
+
+  const totalEntryMinutes = entriesData.reduce((sum, e) => sum + e.durationMinutes, 0);
+  await assertCompatibleWithAbsence(userId, reportDateObj, totalEntryMinutes);
 
   let reportId: string;
 

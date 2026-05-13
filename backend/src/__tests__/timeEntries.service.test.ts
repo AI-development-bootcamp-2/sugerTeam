@@ -8,6 +8,7 @@ import {
   ConflictError,
   LockedError,
   NotFoundError,
+  ValidationError,
 } from '../services/timeEntries.service';
 
 // ─── Prisma mock ──────────────────────────────────────────────────────────────
@@ -19,8 +20,8 @@ jest.mock('@/lib/prisma', () => ({
     dailyReport:     { findFirst: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn() },
     timeReportEntry: { updateMany: jest.fn(), createMany: jest.fn() },
     client:          { findMany: jest.fn() },
-    workCalendarDay: { findMany: jest.fn() },
-    absenceReport:   { findMany: jest.fn() },
+    workCalendarDay: { findMany: jest.fn(), findUnique: jest.fn() },
+    absenceReport:   { findMany: jest.fn(), findFirst: jest.fn() },
     $transaction:    jest.fn(),
   },
 }));
@@ -75,6 +76,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default: month not locked
   jest.mocked(prisma.monthLock.findUnique).mockResolvedValue(null);
+  // Default: no absence covers the reportDate
+  jest.mocked(prisma.absenceReport.findFirst).mockResolvedValue(null);
+  // Default: no calendar override → service falls back to 9h standard
+  jest.mocked(prisma.workCalendarDay.findUnique).mockResolvedValue(null);
   // Default: $transaction executes callback with prisma (for interactive transactions)
   jest.mocked(prisma.$transaction).mockImplementation(
     async (arg: unknown) => {
@@ -129,14 +134,21 @@ describe('upsertDayReport', () => {
     await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toMatchObject({ status: 423 });
   });
 
-  it('throws ConflictError (409) when report is already SUBMITTED', async () => {
+  it('allows editing a SUBMITTED report (status comes from the payload)', async () => {
     jest.mocked(prisma.dailyReport.findFirst).mockResolvedValue({
       id: 'report-1',
       status: DailyReportStatus.SUBMITTED,
     } as never);
+    jest.mocked(prisma.dailyReport.findUniqueOrThrow).mockResolvedValue(mockReport as never);
 
-    await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toBeInstanceOf(ConflictError);
-    await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toMatchObject({ status: 409 });
+    await upsertDayReport(USER_ID, baseDayInput);
+
+    // Goes through the existing-report transaction branch
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.timeReportEntry.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { dailyReportId: 'report-1', deletedAt: null } }),
+    );
+    expect(prisma.timeReportEntry.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('computes durationMinutes from startTime/endTime', async () => {
@@ -149,6 +161,52 @@ describe('upsertDayReport', () => {
     const createCall = jest.mocked(prisma.dailyReport.create).mock.calls[0][0];
     const entryCreated = (createCall.data as { entries: { create: { durationMinutes: number }[] } }).entries.create[0];
     expect(entryCreated.durationMinutes).toBe(240); // 08:00 → 12:00 = 4h = 240min
+  });
+
+  it('rejects entries on a day with a FULL absence', async () => {
+    jest.mocked(prisma.dailyReport.findFirst).mockResolvedValue(null);
+    jest.mocked(prisma.absenceReport.findFirst).mockResolvedValue({
+      isPartial: false,
+      partialDurationHours: null,
+    } as never);
+
+    await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toBeInstanceOf(ValidationError);
+    expect(prisma.dailyReport.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects entries that exceed the partial-absence cap', async () => {
+    jest.mocked(prisma.dailyReport.findFirst).mockResolvedValue(null);
+    jest.mocked(prisma.absenceReport.findFirst).mockResolvedValue({
+      isPartial: true,
+      partialDurationHours: 4, // allowed work = 9 - 4 = 5h = 300min
+    } as never);
+
+    // baseEntry is 08:00–12:00 = 240min, which fits. Add another entry exceeding the cap.
+    const overInput = {
+      ...baseDayInput,
+      entries: [
+        { ...baseEntry, startTime: '08:00', endTime: '13:00' }, // 5h
+        { ...baseEntry, startTime: '13:00', endTime: '14:00' }, // 1h → total 6h > 5h cap
+      ],
+    };
+
+    await expect(upsertDayReport(USER_ID, overInput)).rejects.toBeInstanceOf(ValidationError);
+    expect(prisma.dailyReport.create).not.toHaveBeenCalled();
+  });
+
+  it('allows entries that fit within the partial-absence cap', async () => {
+    jest.mocked(prisma.dailyReport.findFirst).mockResolvedValue(null);
+    jest.mocked(prisma.absenceReport.findFirst).mockResolvedValue({
+      isPartial: true,
+      partialDurationHours: 3, // allowed = 6h = 360min
+    } as never);
+    jest.mocked(prisma.dailyReport.create).mockResolvedValue({ id: 'report-new' } as never);
+    jest.mocked(prisma.dailyReport.findUniqueOrThrow).mockResolvedValue(mockReport as never);
+
+    // baseEntry is 4h, fits inside 6h cap.
+    await upsertDayReport(USER_ID, baseDayInput);
+
+    expect(prisma.dailyReport.create).toHaveBeenCalled();
   });
 });
 
