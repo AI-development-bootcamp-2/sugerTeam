@@ -219,10 +219,6 @@ export async function upsertDayReport(userId: string, data: DayReportInput) {
     where: { userId, reportDate: reportDateObj, deletedAt: null },
   });
 
-  if (existing?.status === DailyReportStatus.SUBMITTED) {
-    throw new ConflictError('הדוח כבר הוגש ולא ניתן לעריכה');
-  }
-
   const dayStartTime = parseTimeUTC(data.startTime);
   const dayEndTime   = parseTimeUTC(data.endTime);
 

@@ -90,7 +90,7 @@ function buildDefaultValues(
     ? blankEntry(initialTimeEntry.startTime, initialTimeEntry.endTime)
     : null;
 
-  if (existingReport?.startTime && existingReport.status === DailyReportStatus.DRAFT) {
+  if (existingReport?.startTime) {
     const reportEntries = existingReport.entries.length > 0
       ? existingReport.entries.map((e) => ({
           workLocation: e.workLocation as 'OFFICE' | 'CLIENT' | 'HOME',

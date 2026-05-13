@@ -134,14 +134,21 @@ describe('upsertDayReport', () => {
     await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toMatchObject({ status: 423 });
   });
 
-  it('throws ConflictError (409) when report is already SUBMITTED', async () => {
+  it('allows editing a SUBMITTED report (status comes from the payload)', async () => {
     jest.mocked(prisma.dailyReport.findFirst).mockResolvedValue({
       id: 'report-1',
       status: DailyReportStatus.SUBMITTED,
     } as never);
+    jest.mocked(prisma.dailyReport.findUniqueOrThrow).mockResolvedValue(mockReport as never);
 
-    await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toBeInstanceOf(ConflictError);
-    await expect(upsertDayReport(USER_ID, baseDayInput)).rejects.toMatchObject({ status: 409 });
+    await upsertDayReport(USER_ID, baseDayInput);
+
+    // Goes through the existing-report transaction branch
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.timeReportEntry.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { dailyReportId: 'report-1', deletedAt: null } }),
+    );
+    expect(prisma.timeReportEntry.createMany).toHaveBeenCalledTimes(1);
   });
 
   it('computes durationMinutes from startTime/endTime', async () => {
