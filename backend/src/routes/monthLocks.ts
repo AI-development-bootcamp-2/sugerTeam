@@ -7,6 +7,7 @@ import {
   unlockMonth,
   listMonths,
   isMonthLocked,
+  getMissingReports,
 } from '@/services/month-lock.service';
 
 const router = Router();
@@ -55,6 +56,25 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+router.get(
+  '/:year/:month/missing-reports',
+  requireRole('ADMIN'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = paramsSchema.safeParse(req.params);
+    if (!result.success) {
+      res.status(400).json({ error: result.error.format() });
+      return;
+    }
+    try {
+      const { year, month } = result.data;
+      const missing = await getMissingReports(year, month);
+      res.status(200).json(missing);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 router.post(
   '/:year/:month/lock',
   requireRole('ADMIN'),
@@ -67,6 +87,14 @@ router.post(
 
     try {
       const { year, month } = result.data;
+      const missing = await getMissingReports(year, month);
+      if (missing.length > 0) {
+        res.status(409).json({
+          error: 'יש עובדים עם דיווחים חסרים, לא ניתן לנעול את החודש',
+          missingReports: missing,
+        });
+        return;
+      }
       const lock = await lockMonth(year, month, req.user!.userId);
       res.status(200).json({
         year:     lock.year,

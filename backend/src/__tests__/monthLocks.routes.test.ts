@@ -17,6 +17,14 @@ const TEST_YEAR  = 2099;
 const TEST_MONTH = 11;
 const TEST_DATE  = `${TEST_YEAR}-${String(TEST_MONTH).padStart(2, '0')}-15`;
 
+// Separate month for the missing-reports tests — uses its own seeded
+// WorkCalendarDay rows so it doesn't interfere with the calendar-empty
+// month above (where every lock test assumes 0 working days = 0 missing).
+const MISS_YEAR  = 2099;
+const MISS_MONTH = 10;
+const MISS_DAY_A = new Date(Date.UTC(MISS_YEAR, MISS_MONTH - 1, 15));
+const MISS_DAY_B = new Date(Date.UTC(MISS_YEAR, MISS_MONTH - 1, 16));
+
 let adminToken: string;
 let adminUserId: string;
 let empToken: string;
@@ -112,7 +120,16 @@ afterAll(async () => {
   }
 
   await prisma.monthLock.deleteMany({
-    where: { year: TEST_YEAR, month: TEST_MONTH },
+    where: {
+      OR: [
+        { year: TEST_YEAR, month: TEST_MONTH },
+        { year: MISS_YEAR, month: MISS_MONTH },
+      ],
+    },
+  }).catch(() => {});
+
+  await prisma.workCalendarDay.deleteMany({
+    where: { date: { in: [MISS_DAY_A, MISS_DAY_B] } },
   }).catch(() => {});
 
   await prisma.task.deleteMany({ where: { id: LOCK_TASK_ID } }).catch(() => {});
@@ -379,5 +396,77 @@ describe('checkMonthLock middleware via POST /time-entries', () => {
       .send(dayPayload(TEST_DATE));
 
     expect(r.status).toBe(201);
+  });
+});
+
+// ─── Missing-reports check + 409 lock block ───────────────────────────────────
+
+describe('Missing reports (admin)', () => {
+  beforeAll(async () => {
+    // Seed two working days in MISS_MONTH so the service has real working
+    // calendar to compare against. The test employee has no submitted
+    // reports + no absences for those days, so they should always show up
+    // as missing here.
+    await prisma.workCalendarDay.upsert({
+      where:  { date: MISS_DAY_A },
+      create: { date: MISS_DAY_A, dayType: 'REGULAR', isWorkingDay: true, standardHours: 9 },
+      update: { isWorkingDay: true },
+    });
+    await prisma.workCalendarDay.upsert({
+      where:  { date: MISS_DAY_B },
+      create: { date: MISS_DAY_B, dayType: 'REGULAR', isWorkingDay: true, standardHours: 9 },
+      update: { isWorkingDay: true },
+    });
+  });
+
+  beforeEach(async () => {
+    await prisma.monthLock.deleteMany({
+      where: { year: MISS_YEAR, month: MISS_MONTH },
+    });
+  });
+
+  it('GET /:year/:month/missing-reports requires ADMIN', async () => {
+    const r = await request(app)
+      .get(`/api/v1/month-locks/${MISS_YEAR}/${MISS_MONTH}/missing-reports`)
+      .set(empAuth());
+    expect(r.status).toBe(403);
+  });
+
+  it('GET /:year/:month/missing-reports returns the employee with the expected count', async () => {
+    const r = await request(app)
+      .get(`/api/v1/month-locks/${MISS_YEAR}/${MISS_MONTH}/missing-reports`)
+      .set(adminAuth());
+
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body)).toBe(true);
+
+    const emp = r.body.find(
+      (u: { userId: string }) => u.userId === empUserId,
+    );
+    expect(emp).toBeDefined();
+    expect(emp.fullName).toBe('MonthLock Test Employee');
+    expect(emp.missingDays).toBe(2);
+  });
+
+  it('POST /:year/:month/lock returns 409 with missingReports when reports are missing', async () => {
+    const r = await request(app)
+      .post(`/api/v1/month-locks/${MISS_YEAR}/${MISS_MONTH}/lock`)
+      .set(adminAuth());
+
+    expect(r.status).toBe(409);
+    expect(r.body).toHaveProperty('error');
+    expect(Array.isArray(r.body.missingReports)).toBe(true);
+
+    const emp = r.body.missingReports.find(
+      (u: { userId: string }) => u.userId === empUserId,
+    );
+    expect(emp).toBeDefined();
+    expect(emp.missingDays).toBe(2);
+
+    // The month must remain unlocked
+    const row = await prisma.monthLock.findUnique({
+      where: { year_month: { year: MISS_YEAR, month: MISS_MONTH } },
+    });
+    expect(row?.isLocked ?? false).toBe(false);
   });
 });
