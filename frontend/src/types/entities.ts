@@ -65,3 +65,7 @@ export interface Task {
 export interface TaskWithProject extends Task {
   project: { id: string; name: string; client: { id: string; name: string } };
 }
+
+export interface TaskWithAssignments extends TaskWithProject {
+  assignments: { id: string; user: { id: string; fullName: string } }[];
+}

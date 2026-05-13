@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './api';
-import type { Client, Project, ProjectWithRelations, Task, TaskWithProject } from '../types/entities';
+import type { Client, Project, ProjectWithRelations, Task, TaskWithProject, TaskWithAssignments } from '../types/entities';
 
 export function useActiveClients() {
   return useQuery({
@@ -161,6 +161,51 @@ export function useCreateTask() {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', 'byProject', variables.projectId] });
       void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+}
+
+export function useTasksWithAssignments(projectId?: string) {
+  return useQuery({
+    queryKey: ['taskAssignments', projectId ?? null],
+    queryFn: async () => {
+      const params = projectId ? { projectId } : {};
+      const { data } = await apiClient.get<TaskWithAssignments[]>('/api/v1/task-assignments', { params });
+      return data;
+    },
+  });
+}
+
+export function useActiveUsers() {
+  return useQuery({
+    queryKey: ['activeUsers'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ id: string; fullName: string }[]>('/api/v1/task-assignments/employees');
+      return data;
+    },
+  });
+}
+
+export function useSyncTaskAssignments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, userIds }: { taskId: string; userIds: string[] }) => {
+      await apiClient.patch(`/api/v1/task-assignments/tasks/${taskId}`, { userIds });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['taskAssignments'] });
+    },
+  });
+}
+
+export function useRemoveTaskAssignments() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      await apiClient.delete(`/api/v1/task-assignments/tasks/${taskId}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['taskAssignments'] });
     },
   });
 }
