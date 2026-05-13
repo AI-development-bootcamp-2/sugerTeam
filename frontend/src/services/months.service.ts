@@ -33,6 +33,25 @@ export function useMonths() {
 
 interface YearMonth { year: number; month: number }
 
+export interface MissingReportsForUser {
+  userId: string;
+  fullName: string;
+  missingDays: number;
+}
+
+export function useMissingReports(year: number, month: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['missing-reports', year, month],
+    enabled,
+    queryFn: async () => {
+      const { data } = await apiClient.get<MissingReportsForUser[]>(
+        `/api/v1/month-locks/${year}/${month}/missing-reports`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useLockMonth() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import axios from 'axios';
 import { Navigate } from 'react-router-dom';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
@@ -8,7 +9,9 @@ import {
   useMonths,
   useLockMonth,
   useUnlockMonth,
+  useMissingReports,
   type MonthLockRecord,
+  type MissingReportsForUser,
 } from '../../../services/months.service';
 
 type Action = 'lock' | 'unlock';
@@ -73,6 +76,11 @@ export default function MonthClosurePage() {
   const months = useMonths();
   const lock = useLockMonth();
   const unlock = useUnlockMonth();
+  const missing = useMissingReports(
+    pending?.year ?? 0,
+    pending?.month ?? 0,
+    pending?.action === 'lock',
+  );
 
   const rows = useMemo(() => buildRows(months.data ?? []), [months.data]);
 
@@ -81,6 +89,11 @@ export default function MonthClosurePage() {
   }
 
   const isMutating = lock.isPending || unlock.isPending;
+  const isLockAction = pending?.action === 'lock';
+  const missingList: MissingReportsForUser[] = missing.data ?? [];
+  const hasMissing = isLockAction && missingList.length > 0;
+  const checkingMissing = isLockAction && missing.isLoading;
+  const confirmDisabled = isMutating || checkingMissing || hasMissing;
 
   const confirm = (): void => {
     if (!pending) return;
@@ -90,7 +103,18 @@ export default function MonthClosurePage() {
       { year: pending.year, month: pending.month },
       {
         onSuccess: () => setPending(null),
-        onError:   () => setError('הפעולה נכשלה, נסה שוב'),
+        onError:   (err) => {
+          if (
+            pending.action === 'lock' &&
+            axios.isAxiosError(err) &&
+            err.response?.status === 409
+          ) {
+            setError('יש עובדים עם דיווחים חסרים, לא ניתן לנעול את החודש');
+            void missing.refetch();
+            return;
+          }
+          setError('הפעולה נכשלה, נסה שוב');
+        },
       },
     );
   };
@@ -185,28 +209,59 @@ export default function MonthClosurePage() {
       <Modal
         isOpen={pending !== null}
         onClose={cancel}
-        title={pending?.action === 'lock' ? 'נעילת חודש' : 'פתיחת חודש'}
+        title={isLockAction ? 'נעילת חודש' : 'פתיחת חודש'}
       >
-        <p className="mb-5 text-sm text-gray-600">
-          {pending?.action === 'lock'
+        <p className="mb-4 text-sm text-gray-600">
+          {isLockAction && pending
             ? `האם לנעול את חודש ${formatMonthYear(pending.year, pending.month)}? לא ניתן לערוך דיווחים לאחר הנעילה.`
             : pending
               ? `האם לפתוח מחדש את חודש ${formatMonthYear(pending.year, pending.month)}?`
               : ''}
         </p>
+
+        {isLockAction && checkingMissing && (
+          <p className="mb-4 text-sm text-gray-500">בודק דיווחים חסרים...</p>
+        )}
+
+        {isLockAction && !checkingMissing && missing.isError && (
+          <p className="mb-4 text-sm text-red-600">לא הצלחנו לבדוק דיווחים חסרים, נסה שוב</p>
+        )}
+
+        {hasMissing && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-red-700">
+              לא ניתן לנעול — חסרים דיווחים מאושרים לעובדים הבאים:
+            </p>
+            <ul className="max-h-48 overflow-y-auto text-sm text-red-700">
+              {missingList.map((u) => (
+                <li
+                  key={u.userId}
+                  className="flex items-center justify-between border-b border-red-100 py-1 last:border-b-0"
+                >
+                  <span>{u.fullName}</span>
+                  <span className="font-mono text-xs">
+                    {u.missingDays} ימים חסרים
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
         <div className="flex gap-2">
           <button
             type="button"
             onClick={confirm}
-            disabled={isMutating}
-            className={`flex-1 rounded-lg py-2.5 text-sm font-medium text-white disabled:opacity-50 ${
-              pending?.action === 'lock'
+            disabled={confirmDisabled}
+            className={`flex-1 rounded-lg py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${
+              isLockAction
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {pending?.action === 'lock' ? 'נעל' : 'פתח'}
+            {isLockAction ? 'נעל' : 'פתח'}
           </button>
           <button
             type="button"
