@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from 'react';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import type { Control, FieldErrors, FieldValues, Path, UseFormSetValue } from 'react-hook-form';
+import type { Control, FieldErrors, FieldValues, Path, UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import type { DropdownDataResponse } from '../../../types/timeEntries';
 
 export const WORK_LOCATION_OPTIONS = [
@@ -30,6 +30,48 @@ export const errorStyle: React.CSSProperties = {
   color: '#E7000B',
   marginTop: 4,
 };
+
+export function DayTimeRangeFields<T extends FieldValues>({
+  register,
+  errors,
+  disabled,
+}: {
+  register: UseFormRegister<T>;
+  errors: FieldErrors<T>;
+  disabled: boolean;
+}) {
+  const startError = errors.dayStartTime as { message?: unknown } | undefined;
+  const endError = errors.dayEndTime as { message?: unknown } | undefined;
+
+  return (
+    <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 16, display: 'flex', gap: 12, flexDirection: 'row-reverse' }}>
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 4, textAlign: 'right' }}>סיום יום</label>
+        <input
+          type="time"
+          {...register('dayEndTime' as Path<T>)}
+          disabled={disabled}
+          style={{ width: '100%', height: 40, border: '1px solid #E5E7EB', borderRadius: 8, padding: '0 12px', fontSize: 15, fontFamily: 'inherit', background: '#FAFAFA', boxSizing: 'border-box' }}
+        />
+        {endError && (
+          <p style={{ fontSize: 13, color: '#E7000B', marginTop: 4 }}>{String(endError.message)}</p>
+        )}
+      </div>
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 4, textAlign: 'right' }}>תחילת יום</label>
+        <input
+          type="time"
+          {...register('dayStartTime' as Path<T>)}
+          disabled={disabled}
+          style={{ width: '100%', height: 40, border: '1px solid #E5E7EB', borderRadius: 8, padding: '0 12px', fontSize: 15, fontFamily: 'inherit', background: '#FAFAFA', boxSizing: 'border-box' }}
+        />
+        {startError && (
+          <p style={{ fontSize: 13, color: '#E7000B', marginTop: 4 }}>{String(startError.message)}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface WorkReportFrameProps {
   open?: boolean;
@@ -332,15 +374,6 @@ export function WorkEntryFields<T extends FieldValues>({
             </div>
           )}
           <div>
-            <label style={{ fontSize: 13, color: '#7A8092', display: 'block', marginBottom: 6, textAlign: 'center' }}>סיום</label>
-            <Controller
-              control={control}
-              name={fieldName<T>(prefix, 'endTime')}
-              render={({ field }) => <input type="time" {...field} readOnly={readOnlyTimes} disabled={disabled} style={fieldStyle} />}
-            />
-            {getError(errors, prefix, 'endTime') && <p style={errorStyle}>{String(getError(errors, prefix, 'endTime')?.message)}</p>}
-          </div>
-          <div>
             <label style={{ fontSize: 13, color: '#7A8092', display: 'block', marginBottom: 6, textAlign: 'center' }}>התחלה</label>
             <Controller
               control={control}
@@ -348,6 +381,15 @@ export function WorkEntryFields<T extends FieldValues>({
               render={({ field }) => <input type="time" {...field} readOnly={readOnlyTimes} disabled={disabled} style={fieldStyle} />}
             />
             {getError(errors, prefix, 'startTime') && <p style={errorStyle}>{String(getError(errors, prefix, 'startTime')?.message)}</p>}
+          </div>
+          <div>
+            <label style={{ fontSize: 13, color: '#7A8092', display: 'block', marginBottom: 6, textAlign: 'center' }}>סיום</label>
+            <Controller
+              control={control}
+              name={fieldName<T>(prefix, 'endTime')}
+              render={({ field }) => <input type="time" {...field} readOnly={readOnlyTimes} disabled={disabled} style={fieldStyle} />}
+            />
+            {getError(errors, prefix, 'endTime') && <p style={errorStyle}>{String(getError(errors, prefix, 'endTime')?.message)}</p>}
           </div>
         </div>
       )}

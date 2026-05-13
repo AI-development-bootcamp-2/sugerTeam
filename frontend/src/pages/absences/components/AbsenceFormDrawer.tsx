@@ -44,7 +44,7 @@ export function AbsenceFormDrawer({ open, onClose, initialAbsence, onMutationSuc
           top: 0,
           bottom: 0,
           left: 0,
-          width: 'min(390px, 100vw)',
+          width: 'min(480px, 100vw)',
           zIndex: 101,
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.3s ease',
