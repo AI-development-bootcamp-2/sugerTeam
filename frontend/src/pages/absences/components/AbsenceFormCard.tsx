@@ -163,13 +163,13 @@ export function AbsenceFormCard({ onClose, flush = false, initialAbsence, onMuta
   const monthCursor = useMemo(() => {
     const now = new Date();
     const fallback = { year: now.getFullYear(), month: now.getMonth() + 1 };
-    if (!startDate) return fallback;
-    const parts = startDate.split('-');
+    if (!endDate) return fallback;
+    const parts = endDate.split('-');
     const y = Number(parts[0]);
     const m = Number(parts[1]);
     if (!Number.isFinite(y) || !Number.isFinite(m) || y < 2000 || m < 1 || m > 12) return fallback;
     return { year: y, month: m };
-  }, [startDate]);
+  }, [endDate]);
   const absencesQuery = useAbsences(userId, monthCursor.year, monthCursor.month);
   const monthTotal = absencesQuery.data?.length ?? 0;
 
@@ -287,7 +287,7 @@ export function AbsenceFormCard({ onClose, flush = false, initialAbsence, onMuta
           </div>
 
           <div className="px-1 text-[13px] font-medium text-[#555a6b]">
-            {formatHebrewDate(startDate)}
+            {formatHebrewDate(endDate)}
           </div>
 
           <TypeField

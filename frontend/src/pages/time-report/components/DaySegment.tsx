@@ -4,6 +4,7 @@ interface DaySegmentProps {
   entry: TimeReportEntryDto;
   isLocked: boolean;
   isLast: boolean;
+  onEdit?: () => void;
 }
 
 function PencilIcon() {
@@ -30,7 +31,7 @@ function formatDuration(minutes: number): string {
   return `${h}:${String(m).padStart(2, '0')} ש׳`;
 }
 
-export default function DaySegment({ entry, isLocked, isLast }: DaySegmentProps) {
+export default function DaySegment({ entry, isLocked, isLast, onEdit }: DaySegmentProps) {
   return (
     <div
       style={{
@@ -51,6 +52,17 @@ export default function DaySegment({ entry, isLocked, isLast }: DaySegmentProps)
         {/* RTL start (right): Edit link — hidden when locked */}
         {!isLocked && (
           <span
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                onEdit?.();
+              }
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -58,6 +70,10 @@ export default function DaySegment({ entry, isLocked, isLast }: DaySegmentProps)
               color: '#0C69FF',
               fontSize: 18,
               cursor: 'pointer',
+              border: 'none',
+              background: 'transparent',
+              padding: 0,
+              fontFamily: 'inherit',
             }}
           >
             <PencilIcon />
@@ -65,9 +81,8 @@ export default function DaySegment({ entry, isLocked, isLast }: DaySegmentProps)
           </span>
         )}
 
-        {/* RTL end (left): time range */}
-        <span style={{ color: '#0C69FF', fontSize: 20, fontWeight: 700 }}>
-          {entry.startTime}–{entry.endTime}
+        <span style={{ fontSize: 20, color: '#848891' }}>
+          {formatDuration(entry.durationMinutes)}
         </span>
       </div>
 
@@ -81,8 +96,8 @@ export default function DaySegment({ entry, isLocked, isLast }: DaySegmentProps)
         }}
       >
         <span style={{ fontSize: 20, color: '#212525' }}>{entry.taskName}</span>
-        <span style={{ fontSize: 20, color: '#848891' }}>
-          {formatDuration(entry.durationMinutes)}
+        <span style={{ color: '#0C69FF', fontSize: 20, fontWeight: 700 }}>
+          {entry.startTime}–{entry.endTime}
         </span>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useFieldArray, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -151,8 +151,26 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
     },
   });
 
-  const { control, handleSubmit, formState: { isSubmitting, errors } } = methods;
+  const { control, handleSubmit, reset, formState: { isSubmitting, errors } } = methods;
   const { fields, append, remove } = useFieldArray({ control, name: 'entries' });
+
+  useEffect(() => {
+    reset({
+      dayStartTime: existingReport?.startTime ?? '08:00',
+      dayEndTime:   existingReport?.endTime ?? '17:00',
+      entries: existingReport?.entries && existingReport.entries.length > 0
+        ? existingReport.entries.map((e) => ({
+            workLocation: e.workLocation as 'OFFICE' | 'CLIENT' | 'HOME',
+            clientId:     e.clientId,
+            projectId:    e.projectId,
+            taskId:       e.taskId,
+            startTime:    e.startTime,
+            endTime:      e.endTime,
+            description:  e.description ?? '',
+          }))
+        : [blankEntry('08:00', '17:00')],
+    });
+  }, [existingReport, reset]);
 
   async function onSubmit(values: DayReportFormValues) {
     await upsert.mutateAsync({
@@ -235,7 +253,7 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
         </button>
 
         <span style={{ fontSize: 17, fontWeight: 700, color: '#212525' }}>
-          דוח יומי — {formatHebrewDate(date)}
+          דיווח ידני
         </span>
 
         {!isReadOnly ? (
