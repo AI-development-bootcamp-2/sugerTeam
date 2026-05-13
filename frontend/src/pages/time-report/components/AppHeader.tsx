@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { TimerState } from '../../../types/time-report';
 import { formatElapsed } from '../utils/timeUtils';
 
@@ -7,6 +8,7 @@ interface AppHeaderProps {
   timerState: TimerState;
   onTimerClick: () => void;
   isTimerLoading?: boolean;
+  centerSlot?: ReactNode;
 }
 
 function LogoutIcon() {
@@ -67,6 +69,7 @@ export default function AppHeader({
   timerState,
   onTimerClick,
   isTimerLoading = false,
+  centerSlot,
 }: AppHeaderProps) {
   const { isRunning, elapsedSeconds } = timerState;
   const isLongRunning = isRunning && elapsedSeconds >= LONG_RUNNING_THRESHOLD;
@@ -89,6 +92,7 @@ export default function AppHeader({
     >
       <div
         style={{
+          position: 'relative',
           maxWidth: 1120,
           margin: '0 auto',
           height: '100%',
@@ -103,6 +107,20 @@ export default function AppHeader({
           alt="Abra"
           style={{ height: 36, width: 'auto', objectFit: 'contain' }}
         />
+
+        {centerSlot && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'auto',
+            }}
+          >
+            {centerSlot}
+          </div>
+        )}
 
         {/* Action buttons — RTL end (left) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
