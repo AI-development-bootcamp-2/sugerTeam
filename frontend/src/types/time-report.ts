@@ -88,6 +88,26 @@ export interface AbsenceDto {
   status: AbsenceStatus;
 }
 
+// ─── Timer DTOs ───────────────────────────────────────────────────────────────
+
+export interface ActiveTimerDto {
+  timerId: string;
+  startedAt: string;   // ISO datetime
+}
+
+export interface StoppedTimerDto {
+  timerId: string;
+  startedAt: string;   // ISO datetime
+  stoppedAt: string;   // ISO datetime
+}
+
+export interface TimerState {
+  isRunning: boolean;
+  timerId: string | null;
+  startedAt: Date | null;
+  elapsedSeconds: number;
+}
+
 // ─── Derived client-side types ────────────────────────────────────────────────
 // Not stored in the database. Computed from API data by useDayEntries.
 
