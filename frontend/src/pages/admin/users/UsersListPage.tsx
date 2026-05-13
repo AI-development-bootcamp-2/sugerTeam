@@ -46,9 +46,15 @@ function UserRow({ user, onEdit }: UserRowProps) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50">
-        <td className="px-4 py-3 text-sm font-medium text-gray-900">{user.fullName}</td>
-        <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
-        <td className="px-4 py-3 text-sm text-gray-600">{ROLE_LABELS[user.role]}</td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm font-medium text-gray-900">{user.fullName}</div>
+        </td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm text-gray-600">{user.email}</div>
+        </td>
+        <td className="overflow-hidden px-4 py-3">
+          <div className="truncate text-sm text-gray-600">{ROLE_LABELS[user.role]}</div>
+        </td>
         <td className="px-4 py-3">
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -194,14 +200,14 @@ export default function UsersListPage() {
         <EmptyState />
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-right">
+          <table className="w-full table-fixed text-right">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">שם מלא</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">דוא״ל</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">תפקיד</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
+                <th className="w-[25%] px-4 py-2 text-start text-sm font-semibold text-white">שם מלא</th>
+                <th className="w-[35%] px-4 py-2 text-start text-sm font-semibold text-white">דוא״ל</th>
+                <th className="w-[20%] px-4 py-2 text-start text-sm font-semibold text-white">תפקיד</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>
