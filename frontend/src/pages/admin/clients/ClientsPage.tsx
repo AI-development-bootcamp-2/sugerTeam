@@ -4,6 +4,7 @@ import { useAllClients, useCreateClient, useUpdateClient } from '../../../servic
 import type { Client } from '../../../types/entities';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
+import EmptyState from '../../../components/EmptyState';
 
 interface ClientForm {
   name: string;
@@ -245,9 +246,7 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {!isLoading && filtered && filtered.length === 0 && (
-        <p className="text-gray-500">אין לקוחות במערכת</p>
-      )}
+      {!isLoading && filtered && filtered.length === 0 && <EmptyState />}
 
       <CreateClientModal isOpen={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
