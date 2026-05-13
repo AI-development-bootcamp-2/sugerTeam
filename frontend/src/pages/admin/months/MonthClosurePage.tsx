@@ -49,16 +49,21 @@ function formatDateTime(iso: string | null): string {
 
 function buildRows(records: MonthLockRecord[]): MonthRow[] {
   const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const isFuture = (year: number, month: number): boolean =>
+    year > currentYear || (year === currentYear && month > currentMonth);
   const preset = new Map<string, MonthRow>();
 
   for (let i = 0; i < MONTHS_TO_PREPOPULATE; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(currentYear, now.getMonth() - i, 1);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     preset.set(`${year}-${month}`, { year, month, record: null });
   }
 
   for (const r of records) {
+    if (isFuture(r.year, r.month)) continue;
     preset.set(`${r.year}-${r.month}`, { year: r.year, month: r.month, record: r });
   }
 
