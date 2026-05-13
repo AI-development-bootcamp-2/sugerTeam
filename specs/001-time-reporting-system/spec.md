@@ -266,7 +266,7 @@ can now edit the same report.
 
 **Authentication & Access**
 
-- **FR-001**: The system MUST authenticate users via email and password.
+- **FR-001**: The system MUST authenticate users via email and password. Email matching MUST be case-insensitive (normalized to lowercase).
 - **FR-002**: User accounts MUST be created exclusively by an admin; self-registration is not permitted.
 - **FR-003**: The system MUST enforce role-based access at every data boundary; client-side checks are supplementary only.
 - **FR-004**: Inactive users MUST NOT be able to log in.
@@ -311,8 +311,8 @@ can now edit the same report.
 **Admin — Entity Management**
 
 - **FR-030**: Admins MUST be able to create, edit, and deactivate users with roles: Employee, Team Lead, Admin.
-- **FR-031**: Admins MUST be able to create, edit, and deactivate clients, projects, and tasks.
-- **FR-032**: All entity deletions MUST be soft-deletes; no data is physically removed.
+- **FR-031**: Admins MUST be able to create, edit, and deactivate clients, projects, and tasks. Create and edit share a single modal component per entity; edit pre-fills all fields from the selected row. The Projects and Tasks admin tables load all entities on page mount (unfiltered); parent pickers (client, project) narrow the displayed rows but are not required before the table renders.
+- **FR-032**: All entity deletions MUST be soft-deletes; no data is physically removed. A confirmation dialog MUST be shown only before the trash-icon deactivation action; other mutations execute immediately.
 - **FR-033**: Deactivated entities MUST NOT appear in new-report dropdowns but MUST remain referenced in historical reports.
 - **FR-034**: Admins and team leads MUST be able to assign employees to tasks. Assignment controls which tasks appear in the employee's report form.
 - **FR-035**: Admins MUST be able to view and edit any employee's reports. Every admin edit MUST be recorded in an audit log with: report ID, editor ID, employee ID, timestamp, previous values, new values.
@@ -325,7 +325,7 @@ can now edit the same report.
 
 **UI & Accessibility**
 
-- **FR-039**: The UI language MUST be Hebrew with full RTL layout support.
+- **FR-039**: The UI language MUST be Hebrew with full RTL layout support. Inline form validation error messages are written by the implementer in standard Hebrew (e.g., "שדה חובה"); no centralized string file is required.
 - **FR-040**: The application MUST be usable on mobile, tablet, and desktop browsers (Chrome, Edge, Safari) with a mobile-first responsive design.
 - **FR-041**: The system MUST provide clear user feedback for: successful save, validation errors, locked-month restrictions, inactive entity selections, authentication errors, and file upload status.
 
@@ -377,3 +377,21 @@ can now edit the same report.
 - Team leads cannot edit other employees' reports; this is an admin-only capability in v1.
 - There is no approval workflow for reports; reports are submitted directly without a manager review step.
 - The exact closure date of a reporting month is not automatically enforced; admins manually lock months at their discretion.
+- Production deployments MUST run behind HTTPS; the refresh token cookie requires the `secure` flag and must not travel over plain HTTP.
+
+---
+
+## Clarifications
+
+### Session 2026-05-10
+
+- Q: Should user email matching be case-insensitive? → A: Yes — normalize email to lowercase on every login lookup (RFC-compliant; prevents "account not found" errors from casing mismatches).
+- Q: Is HTTPS required in production? → A: Yes — production deployments must run behind HTTPS; the refresh token cookie carries the `secure` flag and must not be transmitted over plain HTTP.
+
+### Session 2026-05-12
+
+- Q: Does Stage 2 admin modal support edit as well as create? → A: Yes — the same modal component handles both create (empty fields) and edit (pre-filled from row action); existing `PATCH /:id` endpoints serve edit saves.
+- Q: What does the Projects/Tasks table show before a parent filter is selected? → A: Full unfiltered list — all entities load on page mount regardless of whether a client/project picker has a value.
+- Q: Which actions require a ConfirmDialog before executing? → A: Trash icon (soft-deactivate) only — all other actions (create, edit, filter) execute immediately without a confirmation step.
+- Q: Should new service functions have unit tests or only route integration tests? → A: Route-level integration tests only — `projects.routes.test.ts` and `tasks.routes.test.ts`; no new service-level test files required.
+- Q: Are specific Hebrew error message strings provided for RHF validation? → A: No — implementer writes standard Hebrew inline messages (e.g., "שדה חובה", "תאריך סיום חייב להיות אחרי תאריך התחלה"); no centralized string file required.
