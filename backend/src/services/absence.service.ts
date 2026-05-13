@@ -124,6 +124,69 @@ async function assertNoOverlap(
   }
 }
 
+const DEFAULT_STANDARD_HOURS = 9;
+
+function formatDateUTC(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+async function assertNoWorkEntryConflict(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  isPartial: boolean,
+  partialDurationHours: number | null,
+): Promise<void> {
+  const reports = await prisma.dailyReport.findMany({
+    where: {
+      userId,
+      deletedAt: null,
+      reportDate: { gte: startDate, lte: endDate },
+    },
+    include: {
+      entries: {
+        where: { deletedAt: null },
+        select: { durationMinutes: true },
+      },
+    },
+  });
+
+  const minutesByDate = new Map<string, number>();
+  for (const report of reports) {
+    const total = report.entries.reduce((sum, e) => sum + e.durationMinutes, 0);
+    if (total > 0) {
+      minutesByDate.set(formatDateUTC(report.reportDate), total);
+    }
+  }
+  if (minutesByDate.size === 0) return;
+
+  if (!isPartial) {
+    throw new ValidationError(
+      'קיים דיווח שעות בתאריכים שנבחרו, יש למחוק את הדיווח לפני יצירת היעדרות מלאה',
+    );
+  }
+
+  const calendarDays = await prisma.workCalendarDay.findMany({
+    where: { date: { gte: startDate, lte: endDate } },
+    select: { date: true, standardHours: true },
+  });
+  const stdHoursByDate = new Map<string, number>();
+  for (const day of calendarDays) {
+    stdHoursByDate.set(formatDateUTC(day.date), Number(day.standardHours));
+  }
+
+  const partialHours = partialDurationHours ?? 0;
+  for (const [dateStr, totalMinutes] of minutesByDate) {
+    const standardHours = stdHoursByDate.get(dateStr) ?? DEFAULT_STANDARD_HOURS;
+    const allowedMinutes = Math.max(0, Math.round((standardHours - partialHours) * 60));
+    if (totalMinutes > allowedMinutes) {
+      throw new ValidationError(
+        `קיים דיווח שעות החורג מהמותר ליום היעדרות חלקית בתאריך ${dateStr}`,
+      );
+    }
+  }
+}
+
 export type AbsenceDocumentSummary = Pick<
   AbsenceDocument,
   'id' | 'fileName' | 'mimeType' | 'uploadedAt'
@@ -166,6 +229,13 @@ export async function createAbsence(
 
   await assertRangeUnlocked(startDate, endDate, actorRole);
   await assertNoOverlap(input.userId, startDate, endDate);
+  await assertNoWorkEntryConflict(
+    input.userId,
+    startDate,
+    endDate,
+    input.isPartial,
+    input.partialDurationHours ?? null,
+  );
 
   const calculatedAbsenceDays = calculateAbsenceDays(startDate, endDate);
 
@@ -237,6 +307,25 @@ export async function updateAbsence(
   if (startMoved || endMoved) {
     await assertRangeUnlocked(nextStart, nextEnd, actorRole);
     await assertNoOverlap(existing.userId, nextStart, nextEnd, id);
+  }
+
+  const nextIsPartial = data.isPartial ?? existing.isPartial;
+  const nextPartialHours =
+    data.partialDurationHours !== undefined
+      ? data.partialDurationHours
+      : existing.partialDurationHours !== null
+        ? Number(existing.partialDurationHours)
+        : null;
+  const partialChanged =
+    data.isPartial !== undefined || data.partialDurationHours !== undefined;
+  if (startMoved || endMoved || partialChanged) {
+    await assertNoWorkEntryConflict(
+      existing.userId,
+      nextStart,
+      nextEnd,
+      nextIsPartial,
+      nextPartialHours,
+    );
   }
 
   const datesChanged =

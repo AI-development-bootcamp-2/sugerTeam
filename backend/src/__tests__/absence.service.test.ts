@@ -35,6 +35,12 @@ jest.mock('@/lib/prisma', () => ({
     monthLock: {
       findUnique: jest.fn(),
     },
+    dailyReport: {
+      findMany: jest.fn(),
+    },
+    workCalendarDay: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn().mockImplementation(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
@@ -51,6 +57,8 @@ const reportCreateMock = jest.mocked(prisma.absenceReport.create);
 const reportFindUniqueMock = jest.mocked(prisma.absenceReport.findUnique);
 const reportFindFirstMock = jest.mocked(prisma.absenceReport.findFirst);
 const reportUpdateMock = jest.mocked(prisma.absenceReport.update);
+const dailyReportFindManyMock = jest.mocked(prisma.dailyReport.findMany);
+const workCalendarFindManyMock = jest.mocked(prisma.workCalendarDay.findMany);
 const docCountMock = jest.mocked(prisma.absenceDocument.count);
 const docFindFirstMock = jest.mocked(prisma.absenceDocument.findFirst);
 const docCreateMock = jest.mocked(prisma.absenceDocument.create);
@@ -81,6 +89,9 @@ function baseAbsence(overrides: Partial<{ startDate: Date; endDate: Date }> = {}
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Safe defaults: no work entries, no calendar overrides
+  dailyReportFindManyMock.mockResolvedValue([] as never);
+  workCalendarFindManyMock.mockResolvedValue([] as never);
 });
 
 describe('calculateAbsenceDays', () => {
@@ -220,6 +231,84 @@ describe('createAbsence', () => {
     expect(reportCreateMock).toHaveBeenCalled();
   });
 
+  it('rejects a FULL absence when work entries exist on any covered date', async () => {
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce(null); // no overlap with other absences
+    dailyReportFindManyMock.mockResolvedValueOnce([
+      {
+        reportDate: new Date(Date.UTC(2026, 4, 5)),
+        entries: [{ durationMinutes: 120 }],
+      },
+    ] as never);
+
+    await expect(
+      createAbsence(
+        {
+          userId: ownerId,
+          absenceType: AbsenceType.VACATION,
+          startDate: '2026-05-04',
+          endDate:   '2026-05-06',
+          isPartial: false,
+        },
+        UserRole.EMPLOYEE,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(reportCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a PARTIAL absence when entries exceed the standard-minus-partial cap', async () => {
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce(null);
+    // 7h of entries on 2026-05-04, default 9h standard, partial 3h → allowed = 6h. 7 > 6 → reject.
+    dailyReportFindManyMock.mockResolvedValueOnce([
+      {
+        reportDate: new Date(Date.UTC(2026, 4, 4)),
+        entries: [{ durationMinutes: 420 }],
+      },
+    ] as never);
+
+    await expect(
+      createAbsence(
+        {
+          userId: ownerId,
+          absenceType: AbsenceType.SICK_LEAVE,
+          startDate: '2026-05-04',
+          endDate:   '2026-05-04',
+          isPartial: true,
+          partialDurationHours: 3,
+        },
+        UserRole.EMPLOYEE,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('allows a PARTIAL absence when existing entries fit within the cap', async () => {
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce(null);
+    // 5h of entries, 9h standard, partial 3h → allowed = 6h. 5 ≤ 6 → ok.
+    dailyReportFindManyMock.mockResolvedValueOnce([
+      {
+        reportDate: new Date(Date.UTC(2026, 4, 4)),
+        entries: [{ durationMinutes: 300 }],
+      },
+    ] as never);
+    reportCreateMock.mockResolvedValue(baseAbsence());
+
+    await createAbsence(
+      {
+        userId: ownerId,
+        absenceType: AbsenceType.SICK_LEAVE,
+        startDate: '2026-05-04',
+        endDate:   '2026-05-04',
+        isPartial: true,
+        partialDurationHours: 3,
+      },
+      UserRole.EMPLOYEE,
+    );
+
+    expect(reportCreateMock).toHaveBeenCalled();
+  });
+
   it('SICK_LEAVE creates a record in DOCUMENT_PENDING status', async () => {
     lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
     reportCreateMock.mockResolvedValue({
@@ -291,6 +380,28 @@ describe('updateAbsence', () => {
     await updateAbsence(absenceId, { endDate: '2026-05-08' }, ownerId, UserRole.EMPLOYEE);
 
     expect(reportUpdateMock).toHaveBeenCalled();
+  });
+
+  it('rejects a partial-change update when existing entries no longer fit the new cap', async () => {
+    reportFindUniqueMock.mockResolvedValue(baseAbsence() as never);
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    // Dates unchanged → no overlap check, but partial flipped on → entry-conflict check runs.
+    dailyReportFindManyMock.mockResolvedValueOnce([
+      {
+        reportDate: new Date(Date.UTC(2026, 4, 4)),
+        entries: [{ durationMinutes: 480 }], // 8h, exceeds 9-3=6 cap
+      },
+    ] as never);
+
+    await expect(
+      updateAbsence(
+        absenceId,
+        { isPartial: true, partialDurationHours: 3 },
+        ownerId,
+        UserRole.EMPLOYEE,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(reportUpdateMock).not.toHaveBeenCalled();
   });
 
   it('skips the overlap check when dates are unchanged', async () => {
