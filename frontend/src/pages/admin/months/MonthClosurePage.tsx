@@ -68,6 +68,44 @@ function buildRows(records: MonthLockRecord[]): MonthRow[] {
   });
 }
 
+function LockClosedIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function LockOpenIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </svg>
+  );
+}
+
 export default function MonthClosurePage() {
   const authUser = useAuthStore((s) => s.user);
   const [pending, setPending] = useState<PendingAction | null>(null);
@@ -137,14 +175,14 @@ export default function MonthClosurePage() {
         <EmptyState />
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-right">
+          <table className="w-full table-fixed">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">חודש</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">סטטוס</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">נעול ב</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">נעול על-ידי</th>
-                <th className="px-4 py-3 text-start text-sm font-semibold text-white">פעולות</th>
+                <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">חודש</th>
+                <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">סטטוס</th>
+                <th className="w-[25%] px-4 py-2 text-start text-sm font-semibold text-white">נעול ב</th>
+                <th className="w-[35%] px-4 py-2 text-start text-sm font-semibold text-white">נעול על-ידי</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">פעולות</th>
               </tr>
             </thead>
             <tbody>
@@ -182,9 +220,11 @@ export default function MonthClosurePage() {
                           onClick={() =>
                             setPending({ action: 'unlock', year: row.year, month: row.month })
                           }
-                          className="rounded-md border border-green-300 px-3 py-1 text-xs text-green-700 hover:bg-green-50"
+                          className="rounded-md p-1.5 text-green-700 hover:bg-green-50"
+                          aria-label="פתח מחדש"
+                          title="פתח מחדש"
                         >
-                          פתח מחדש
+                          <LockOpenIcon />
                         </button>
                       ) : (
                         <button
@@ -192,9 +232,11 @@ export default function MonthClosurePage() {
                           onClick={() =>
                             setPending({ action: 'lock', year: row.year, month: row.month })
                           }
-                          className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-700 hover:bg-red-50"
+                          className="rounded-md p-1.5 text-red-700 hover:bg-red-50"
+                          aria-label="נעל"
+                          title="נעל"
                         >
-                          נעל
+                          <LockClosedIcon />
                         </button>
                       )}
                     </td>
