@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useTimeEntriesData } from './hooks/useTimeEntriesData';
@@ -76,17 +77,20 @@ function getMonthName(month: number, year: number): string {
 
 export default function TimeReportPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const { selectedYear, selectedMonth, handlePrevMonth, handleNextMonth } =
     useMonthNavigation();
   const { drawerOpen, openDrawer, closeDrawer } = useDrawer();
   const [absenceDrawerOpen, setAbsenceDrawerOpen] = useState(false);
+  const [editAbsenceId, setEditAbsenceId] = useState<string | null>(null);
 
   const {
     dayEntries,
     monthlyDays,
     monthlySummary,
+    absences,
     isLocked,
     isLoading,
     isError,
@@ -147,6 +151,18 @@ export default function TimeReportPage() {
     setSelectedDate(null);
   }
 
+  function handleEditAbsence(date: string) {
+    const absence = absences.find((a) => {
+      const start = a.startDate.slice(0, 10);
+      const end = a.endDate.slice(0, 10);
+      return date >= start && date <= end;
+    });
+    setEditAbsenceId(absence?.id ?? null);
+    setAbsenceDrawerOpen(true);
+  }
+
+  const selectedAbsence = absences.find((a) => a.id === editAbsenceId);
+
   function handleLogout() {
     clearAuth();
     void navigate('/login');
@@ -156,7 +172,7 @@ export default function TimeReportPage() {
     <>
       <AppHeader
         onLogout={handleLogout}
-        onAddDay={() => setAbsenceDrawerOpen(true)}
+        onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }}
         timerState={timerState}
         onTimerClick={() => { void handleTimerClick(); }}
         isTimerLoading={isStarting || isStopping}
@@ -289,6 +305,7 @@ export default function TimeReportPage() {
                 dayEntries={dayEntries}
                 isLocked={isLocked}
                 onOpenReport={handleOpenReport}
+                onEditAbsence={handleEditAbsence}
               />
             )}
           </div>
@@ -334,7 +351,14 @@ export default function TimeReportPage() {
 
       <AbsenceFormDrawer
         open={absenceDrawerOpen}
-        onClose={() => setAbsenceDrawerOpen(false)}
+        onClose={() => {
+          setAbsenceDrawerOpen(false);
+          setEditAbsenceId(null);
+          void queryClient.invalidateQueries({ queryKey: ['absences'] });
+          refetch();
+        }}
+        initialAbsence={selectedAbsence}
+        onMutationSuccess={refetch}
       />
     </>
   );

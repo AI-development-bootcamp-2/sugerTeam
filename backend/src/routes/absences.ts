@@ -35,7 +35,7 @@ const createAbsenceSchema = z.object({
   startDate:   z.string().regex(ISO_DATE_RE, 'פורמט startDate שגוי, נדרש yyyy-mm-dd'),
   endDate:     z.string().regex(ISO_DATE_RE, 'פורמט endDate שגוי, נדרש yyyy-mm-dd'),
   isPartial:   z.boolean(),
-  partialDurationHours: z.number().positive().max(24).optional(),
+  partialDurationHours: z.number().positive().max(24).nullable().optional(),
 }).refine(
   (d) => d.startDate <= d.endDate,
   { path: ['endDate'], message: 'תאריך סיום חייב להיות אחרי תאריך ההתחלה' },

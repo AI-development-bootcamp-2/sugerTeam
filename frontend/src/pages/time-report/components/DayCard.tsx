@@ -9,6 +9,7 @@ interface DayCardProps {
   onToggle: () => void;
   isLocked: boolean;
   onOpenReport?: () => void;
+  onEditAbsence?: () => void;
   actionSlot?: ReactNode;
 }
 
@@ -60,10 +61,12 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOpenReport, actionSlot }: DayCardProps) {
-  const canAddReport = dayEntry.isWorkingDay && !dayEntry.isFuture && !isLocked;
-  const isInteractive = dayEntry.entries.length > 0 || canAddReport;
-  const showBody = isExpanded && (dayEntry.entries.length > 0 || canAddReport);
+export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOpenReport, onEditAbsence, actionSlot }: DayCardProps) {
+  // Partial absences allow adding a time report for the remaining hours of the day.
+  const canAddReport = dayEntry.isWorkingDay && !dayEntry.isFuture && !isLocked &&
+    (!dayEntry.hasAbsence || dayEntry.isPartial);
+  const isInteractive = dayEntry.entries.length > 0 || canAddReport || dayEntry.hasAbsence;
+  const showBody = isExpanded && (dayEntry.entries.length > 0 || canAddReport || dayEntry.hasAbsence);
 
   return (
     <div>
@@ -133,12 +136,41 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
           overflow: 'hidden',
           transition: 'max-height 0.3s ease',
           background: '#FFFFFF',
-          border: showBody ? '1px solid #ECECEC' : 'none',
-          borderTop: 'none',
+          borderLeft: showBody ? '1px solid #ECECEC' : 'none',
+          borderRight: showBody ? '1px solid #ECECEC' : 'none',
+          borderBottom: showBody ? '1px solid #ECECEC' : 'none',
           borderRadius: '0 0 12px 12px',
         }}
       >
-        {/* ── TR-014: empty state — CTA for missing working days ────────────── */}
+        {/* ── Edit-absence button — shown whenever day has an absence ──────── */}
+        {dayEntry.hasAbsence && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onEditAbsence?.(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onEditAbsence?.(); } }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '16px',
+              cursor: 'pointer',
+              color: '#0C69FF',
+              fontSize: 16,
+              fontWeight: 600,
+              borderBottom: (dayEntry.entries.length > 0 || canAddReport) ? '1px solid #ECECEC' : 'none',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+            ערוך היעדרות
+          </div>
+        )}
+
+        {/* ── TR-014: empty state — CTA for missing / partial-absence days ── */}
         {dayEntry.entries.length === 0 && (
           canAddReport ? (
             <div
@@ -169,11 +201,11 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
                 + הוסף רשומה
               </span>
             </div>
-          ) : (
+          ) : !dayEntry.hasAbsence ? (
             <p style={{ margin: 0, padding: '24px 16px', fontSize: 16, color: '#848891', textAlign: 'center' }}>
               לא נמצאו דיווחים ליום זה
             </p>
-          )
+          ) : null
         )}
 
         {/* ── T022: segment list ──────────────────────────────────────────── */}
@@ -187,7 +219,7 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
         ))}
 
         {/* ── Add-report button — only shown when there are existing entries ── */}
-        {!isLocked && dayEntry.entries.length > 0 && (
+        {canAddReport && dayEntry.entries.length > 0 && (
           <div
             role="button"
             tabIndex={0}

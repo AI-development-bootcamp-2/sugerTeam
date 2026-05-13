@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import axios from 'axios';
 import { z } from 'zod';
@@ -7,9 +7,12 @@ import { AbsenceType } from '../../../types/time-report';
 import {
   useAbsences,
   useCreateAbsence,
+  useUpdateAbsence,
   useUploadDocument,
 } from '../../../services/absences.service';
+import type { AbsenceWithDocumentsDto } from '../../../services/absences.service';
 import { useAuthStore } from '../../../store/authStore';
+import { WorkReportTab } from './WorkReportTab';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -96,9 +99,13 @@ const absenceFormResolver: Resolver<AbsenceFormData> = async (values) => {
 interface AbsenceFormCardProps {
   onClose?: () => void;
   flush?: boolean;
+  initialAbsence?: AbsenceWithDocumentsDto;
+  onMutationSuccess?: () => void;
 }
 
-export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps) {
+export function AbsenceFormCard({ onClose, flush = false, initialAbsence, onMutationSuccess }: AbsenceFormCardProps) {
+  const isEditing = !!initialAbsence;
+  const [activeTab, setActiveTab] = useState<'absence' | 'work'>('absence');
   const userId = useAuthStore((s) => s.user?.id);
   const today = todayIso();
 
@@ -110,12 +117,20 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
     formState: { errors },
   } = useForm<AbsenceFormData>({
     resolver: absenceFormResolver,
-    defaultValues: {
-      startDate: today,
-      endDate: today,
-      absenceType: AbsenceType.SICK_LEAVE,
-      isPartial: false,
-    },
+    defaultValues: initialAbsence
+      ? {
+          startDate: initialAbsence.startDate.slice(0, 10),
+          endDate: initialAbsence.endDate.slice(0, 10),
+          absenceType: initialAbsence.absenceType,
+          isPartial: initialAbsence.isPartial,
+          partialDurationHours: initialAbsence.partialDurationHours ?? undefined,
+        }
+      : {
+          startDate: today,
+          endDate: today,
+          absenceType: AbsenceType.SICK_LEAVE,
+          isPartial: false,
+        },
   });
 
   const startDate = useWatch({ control, name: 'startDate' });
@@ -130,10 +145,29 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const createAbsence = useCreateAbsence();
+  const updateAbsence = useUpdateAbsence();
   const uploadDocument = useUploadDocument();
 
+  useEffect(() => {
+    if (initialAbsence) {
+      reset({
+        startDate: initialAbsence.startDate.slice(0, 10),
+        endDate: initialAbsence.endDate.slice(0, 10),
+        absenceType: initialAbsence.absenceType,
+        isPartial: initialAbsence.isPartial,
+        partialDurationHours: initialAbsence.partialDurationHours ?? undefined,
+      });
+    }
+  }, [initialAbsence, reset]);
+
   const monthCursor = useMemo(() => {
-    const [y, m] = startDate.split('-').map(Number);
+    const now = new Date();
+    const fallback = { year: now.getFullYear(), month: now.getMonth() + 1 };
+    if (!startDate) return fallback;
+    const parts = startDate.split('-');
+    const y = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || y < 2000 || m < 1 || m > 12) return fallback;
     return { year: y, month: m };
   }, [startDate]);
   const absencesQuery = useAbsences(userId, monthCursor.year, monthCursor.month);
@@ -158,40 +192,68 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
   const submitAbsence = handleSubmit(async (data) => {
     setServerError(null);
     setSuccessMessage(null);
+    const partialHours = data.isPartial ? (data.partialDurationHours ?? null) : null;
     try {
-      const record = await createAbsence.mutateAsync({
-        absenceType: data.absenceType,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        isPartial: data.isPartial,
-        partialDurationHours: data.isPartial ? data.partialDurationHours ?? null : null,
-      });
-      if (pendingFile) {
-        await uploadDocument.mutateAsync({ absenceId: record.id, file: pendingFile });
+      if (isEditing) {
+        await updateAbsence.mutateAsync({
+          id: initialAbsence.id,
+          absenceType: data.absenceType,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          isPartial: data.isPartial,
+          partialDurationHours: partialHours,
+        });
+        if (pendingFile) {
+          await uploadDocument.mutateAsync({ absenceId: initialAbsence.id, file: pendingFile });
+        }
+        setSuccessMessage('ההיעדרות עודכנה');
+        setPendingFile(null);
+        onMutationSuccess?.();
+        setTimeout(() => onClose?.(), 900);
+      } else {
+        const record = await createAbsence.mutateAsync({
+          absenceType: data.absenceType,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          isPartial: data.isPartial,
+          partialDurationHours: partialHours,
+        });
+        if (pendingFile) {
+          await uploadDocument.mutateAsync({ absenceId: record.id, file: pendingFile });
+        }
+        setSuccessMessage('ההיעדרות נשמרה');
+        setPendingFile(null);
+        onMutationSuccess?.();
+        reset({
+          startDate: today,
+          endDate: today,
+          absenceType: AbsenceType.SICK_LEAVE,
+          isPartial: false,
+        });
       }
-      setSuccessMessage('ההיעדרות נשמרה');
-      setPendingFile(null);
-      reset({
-        startDate: today,
-        endDate: today,
-        absenceType: AbsenceType.SICK_LEAVE,
-        isPartial: false,
-      });
     } catch (err: unknown) {
       handleAxiosError(err, setServerError);
     }
   });
 
+  const outerClassName = flush
+    ? 'relative flex h-full w-full flex-col overflow-hidden bg-[#f2f2f7]'
+    : 'relative flex h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]';
+
+  if (activeTab === 'work') {
+    return (
+      <div className={outerClassName}>
+        <WorkReportTab onSwitchToAbsence={() => setActiveTab('absence')} onClose={onClose} />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={
-        flush
-          ? 'relative flex h-full w-full flex-col overflow-hidden bg-[#f2f2f7]'
-          : 'relative flex h-[760px] w-full max-w-[390px] flex-col overflow-hidden rounded-[34px] bg-[#f2f2f7] shadow-[0_30px_80px_rgba(20,30,62,.18),0_6px_18px_rgba(20,30,62,.08)]'
-      }
-    >
+    <div className={outerClassName}>
       <header className="flex items-center justify-between px-5 pt-[18px] pb-[14px]">
-        <h1 className="text-[18px] font-bold tracking-tight text-[#1a2233]">דיווח ידני</h1>
+        <h1 className="text-[18px] font-bold tracking-tight text-[#1a2233]">
+          {isEditing ? 'עריכת היעדרות' : 'דיווח ידני'}
+        </h1>
         <button
           type="button"
           aria-label="סגירה"
@@ -218,9 +280,7 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
               type="button"
               aria-selected="false"
               className="h-[38px] rounded-[10px] bg-transparent text-sm font-semibold text-[#7a8092]"
-              onClick={() => {
-                window.location.href = '/time-report';
-              }}
+              onClick={() => setActiveTab('work')}
             >
               דיווח עבודה
             </button>
@@ -237,10 +297,16 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
 
           <label className="flex h-[54px] cursor-pointer items-center gap-[10px] rounded-[14px] border border-[#ececf2] bg-white px-[14px] shadow-[0_1px_2px_rgba(20,30,62,.04),0_6px_22px_rgba(20,30,62,.05)]">
             <span className="text-[13px] font-medium text-[#555a6b]">תאריך התחלה</span>
-            <input
-              type="date"
-              {...register('startDate')}
-              className="flex-1 bg-transparent text-end text-[15px] font-semibold text-[#1a2233] outline-none"
+            <Controller
+              control={control}
+              name="startDate"
+              render={({ field }) => (
+                <input
+                  type="date"
+                  {...field}
+                  className="flex-1 bg-transparent text-end text-[15px] font-semibold text-[#1a2233] outline-none"
+                />
+              )}
             />
           </label>
           {errors.startDate && (
@@ -249,10 +315,16 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
 
           <label className="flex h-[54px] cursor-pointer items-center gap-[10px] rounded-[14px] border border-[#ececf2] bg-white px-[14px] shadow-[0_1px_2px_rgba(20,30,62,.04),0_6px_22px_rgba(20,30,62,.05)]">
             <span className="text-[13px] font-medium text-[#555a6b]">תאריך סיום</span>
-            <input
-              type="date"
-              {...register('endDate')}
-              className="flex-1 bg-transparent text-end text-[15px] font-semibold text-[#1a2233] outline-none"
+            <Controller
+              control={control}
+              name="endDate"
+              render={({ field }) => (
+                <input
+                  type="date"
+                  {...field}
+                  className="flex-1 bg-transparent text-end text-[15px] font-semibold text-[#1a2233] outline-none"
+                />
+              )}
             />
           </label>
           {errors.endDate && (
@@ -326,10 +398,16 @@ export function AbsenceFormCard({ onClose, flush = false }: AbsenceFormCardProps
         <div className="bg-gradient-to-b from-transparent to-[#f2f2f7] px-[18px] pb-[22px] pt-[14px]">
           <button
             type="submit"
-            disabled={createAbsence.isPending || uploadDocument.isPending}
+            disabled={
+              isEditing
+                ? updateAbsence.isPending || uploadDocument.isPending
+                : createAbsence.isPending || uploadDocument.isPending
+            }
             className="h-[54px] w-full rounded-[14px] bg-[#141e3e] text-[17px] font-bold text-white shadow-[0_8px_20px_rgba(20,30,62,.18)] transition-colors hover:bg-[#1d2952] disabled:opacity-60"
           >
-            {createAbsence.isPending || uploadDocument.isPending ? 'שומר...' : 'שמירה'}
+            {isEditing
+              ? updateAbsence.isPending || uploadDocument.isPending ? 'מעדכן...' : 'עדכון'
+              : createAbsence.isPending || uploadDocument.isPending ? 'שומר...' : 'שמירה'}
           </button>
         </div>
       </form>

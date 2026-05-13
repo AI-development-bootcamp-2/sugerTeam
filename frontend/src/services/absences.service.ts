@@ -59,7 +59,7 @@ export function useAbsences(userId: string | undefined, year: number, month: num
       });
       return data;
     },
-    enabled: !!userId,
+    enabled: !!userId && Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12,
   });
 }
 

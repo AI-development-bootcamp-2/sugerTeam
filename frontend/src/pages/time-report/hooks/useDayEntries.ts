@@ -41,6 +41,7 @@ function deriveDayStatus(
   if (dayType === CalendarDayType.HOLIDAY) return 'holiday';
   if (dayType === CalendarDayType.WEEKEND || !isWorkingDay) return 'weekend';
   if (hasAbsence && absenceType === AbsenceType.VACATION) return 'vacation';
+  if (hasAbsence && absenceType !== null) return 'absence';
   if (isFuture) return null;
   if (isToday && reportedMinutes > 0) return 'open';
   if (!isToday && standardMinutes > 0 && reportedMinutes >= standardMinutes) return 'filled';
@@ -56,15 +57,25 @@ function deriveDayStatus(
 // When AbsenceReport integration is complete, replace this with actual absence
 // duration for absenceMinutes in computeMonthSummary.
 
-function buildAbsenceMap(absences: AbsenceDto[]): Map<string, AbsenceType> {
-  const map = new Map<string, AbsenceType>();
+interface AbsenceMapEntry {
+  absenceId: string;
+  absenceType: AbsenceType;
+  isPartial: boolean;
+}
+
+function buildAbsenceMap(absences: AbsenceDto[]): Map<string, AbsenceMapEntry> {
+  const map = new Map<string, AbsenceMapEntry>();
 
   for (const absence of absences) {
     const end = parseLocalDate(absence.endDate);
     const cursor = parseLocalDate(absence.startDate);
 
     while (cursor <= end) {
-      map.set(toDateString(cursor), absence.absenceType);
+      map.set(toDateString(cursor), {
+        absenceId: absence.id,
+        absenceType: absence.absenceType,
+        isPartial: absence.isPartial,
+      });
       cursor.setDate(cursor.getDate() + 1);
     }
   }
@@ -116,7 +127,10 @@ export function buildDayEntries(
     };
 
     const report = reportMap.get(dateStr);
-    const absenceType = absenceMap.get(dateStr) ?? null;
+    const absenceEntry = absenceMap.get(dateStr) ?? null;
+    const absenceType = absenceEntry?.absenceType ?? null;
+    const absenceId = absenceEntry?.absenceId ?? null;
+    const isPartial = absenceEntry?.isPartial ?? false;
     const hasAbsence = absenceType !== null;
     const reportedMinutes = report?.totalMinutes ?? 0;
     const standardMinutes = calDay.standardHours * 60;
@@ -145,6 +159,8 @@ export function buildDayEntries(
       entries: report?.entries ?? [],
       hasAbsence,
       absenceType,
+      absenceId,
+      isPartial,
       isToday,
       isFuture,
       displayStatus,

@@ -118,6 +118,7 @@ export type DayStatus =
   | 'weekend'    // Friday or Saturday (dayType WEEKEND)
   | 'holiday'    // public holiday (dayType HOLIDAY) — auto non-working, no action needed
   | 'vacation'   // covered by an AbsenceReport of type VACATION
+  | 'absence'    // covered by an AbsenceReport of type SICK_LEAVE / MILITARY_RESERVE / OTHER
   | 'irregular'; // partial hours (< standard but > 0) — rule not yet active in deriveDayStatus
 
 export interface DayEntry {
@@ -130,6 +131,8 @@ export interface DayEntry {
   entries: TimeReportEntryDto[];
   hasAbsence: boolean;
   absenceType: AbsenceType | null;
+  absenceId: string | null;        // ID of the covering absence, for edit flows
+  isPartial: boolean;              // true = partial absence; time entries are also allowed
   isToday: boolean;
   isFuture: boolean;
   // null for future days — the UI renders no status tag when displayStatus is null
