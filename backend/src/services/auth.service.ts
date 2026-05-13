@@ -36,8 +36,8 @@ function signAccess(userId: string, role: string): string {
   } as jwt.SignOptions);
 }
 
-function signRefresh(userId: string, jti: string): string {
-  return jwt.sign({ sub: userId, jti }, process.env.JWT_REFRESH_SECRET!, {
+function signRefresh(userId: string, jti: string, remember: boolean): string {
+  return jwt.sign({ sub: userId, jti, remember }, process.env.JWT_REFRESH_SECRET!, {
     algorithm: 'HS256',
     expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '30d') as string,
   } as jwt.SignOptions);
@@ -46,12 +46,14 @@ function signRefresh(userId: string, jti: string): string {
 interface TokenResult {
   accessToken: string;
   refreshToken: string;
+  remember: boolean;
   user: { id: string; fullName: string; role: string };
 }
 
 export async function login(
   email: string,
   password: string,
+  rememberMe: boolean,
   userAgent?: string,
   ipAddress?: string,
 ): Promise<TokenResult> {
@@ -76,7 +78,7 @@ export async function login(
 
   const jti = uuidv4();
   const accessToken = signAccess(user.id, user.role);
-  const refreshToken = signRefresh(user.id, jti);
+  const refreshToken = signRefresh(user.id, jti, rememberMe);
 
   await prisma.refreshToken.create({
     data: {
@@ -88,15 +90,15 @@ export async function login(
     },
   });
 
-  return { accessToken, refreshToken, user: { id: user.id, fullName: user.fullName, role: user.role } };
+  return { accessToken, refreshToken, remember: rememberMe, user: { id: user.id, fullName: user.fullName, role: user.role } };
 }
 
 export async function refreshTokens(refreshToken: string): Promise<TokenResult> {
-  let payload: { sub: string; jti: string };
+  let payload: { sub: string; jti: string; remember?: boolean };
   try {
     payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!, {
       algorithms: ['HS256'],
-    }) as { sub: string; jti: string };
+    }) as { sub: string; jti: string; remember?: boolean };
   } catch {
     throw new AuthError(401, 'Invalid refresh token');
   }
@@ -129,10 +131,11 @@ export async function refreshTokens(refreshToken: string): Promise<TokenResult> 
     }),
   ]);
 
+  const remember = payload.remember === true;
   const accessToken = signAccess(user.id, user.role);
-  const newRefreshToken = signRefresh(user.id, newJti);
+  const newRefreshToken = signRefresh(user.id, newJti, remember);
 
-  return { accessToken, refreshToken: newRefreshToken, user: { id: user.id, fullName: user.fullName, role: user.role } };
+  return { accessToken, refreshToken: newRefreshToken, remember, user: { id: user.id, fullName: user.fullName, role: user.role } };
 }
 
 export async function logout(refreshToken: string): Promise<void> {
