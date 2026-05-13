@@ -73,7 +73,7 @@ function getEntrySelect(container: HTMLElement, fieldSuffix: string) {
 // ─── Read-only mode ───────────────────────────────────────────────────────────
 
 describe('read-only mode', () => {
-  it('shows the submitted-report banner and hides action buttons when status is SUBMITTED', () => {
+  it('allows editing when status is SUBMITTED', () => {
     const submittedReport: DayDto = {
       reportDate:    '2026-01-05',
       dayType:       CalendarDayType.REGULAR,
@@ -87,9 +87,9 @@ describe('read-only mode', () => {
 
     render(<DailyReportDrawer {...defaultProps} existingReport={submittedReport} />);
 
-    expect(screen.getByText(/הדוח הוגש/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'שמור טיוטה' })).not.toBeInTheDocument();
-    expect(screen.queryByText('+ הוסף רשומה')).not.toBeInTheDocument();
+    expect(screen.queryByText(/הדוח הוגש/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'שמור טיוטה' })).toBeInTheDocument();
+    expect(screen.getByText('+ הוסף רשומה')).toBeInTheDocument();
   });
 
   it('shows the locked-month banner and hides action buttons when isMonthLocked is true', () => {
