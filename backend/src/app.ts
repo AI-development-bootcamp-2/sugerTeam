@@ -9,6 +9,7 @@ import timeEntriesRouter from './routes/timeEntries';
 import monthLocksRouter from './routes/monthLocks';
 import absencesRouter from './routes/absences';
 import tasksRouter from './routes/tasks';
+import timerRouter from './routes/timers';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/api/v1/time-entries', timeEntriesRouter);
 app.use('/api/v1/month-locks', monthLocksRouter);
 app.use('/api/v1/absences', absencesRouter);
 app.use('/api/v1/tasks', tasksRouter);
+app.use('/api/v1/timers', timerRouter);
 
 app.get('/api/v1/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });

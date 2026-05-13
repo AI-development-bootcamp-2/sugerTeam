@@ -1,6 +1,12 @@
+import type { TimerState } from '../../../types/time-report';
+import { formatElapsed } from '../utils/timeUtils';
+
 interface AppHeaderProps {
   onLogout: () => void;
   onAddDay: () => void;
+  timerState: TimerState;
+  onTimerClick: () => void;
+  isTimerLoading?: boolean;
 }
 
 function LogoutIcon() {
@@ -21,6 +27,14 @@ function PlayIcon() {
   );
 }
 
+function StopIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  );
+}
+
 function PlusCircleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -30,6 +44,8 @@ function PlusCircleIcon() {
     </svg>
   );
 }
+
+const LONG_RUNNING_THRESHOLD = 8 * 3600; // 28 800 s
 
 const pillBase: React.CSSProperties = {
   display: 'inline-flex',
@@ -45,7 +61,17 @@ const pillBase: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-export default function AppHeader({ onLogout, onAddDay }: AppHeaderProps) {
+export default function AppHeader({
+  onLogout,
+  onAddDay,
+  timerState,
+  onTimerClick,
+  isTimerLoading = false,
+}: AppHeaderProps) {
+  const { isRunning, elapsedSeconds } = timerState;
+  const isLongRunning = isRunning && elapsedSeconds >= LONG_RUNNING_THRESHOLD;
+  const buttonLabel   = isRunning ? formatElapsed(elapsedSeconds) : 'הפעלת שעון';
+
   return (
     <header
       data-testid="app-header"
@@ -79,14 +105,49 @@ export default function AppHeader({ onLogout, onAddDay }: AppHeaderProps) {
 
         {/* Action buttons — RTL end (left) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* הפעלת שעון — placeholder, no onClick in v1 */}
-          <button
-            type="button"
-            style={{ ...pillBase, background: '#EA7693', color: '#FFFFFF' }}
-          >
-            <PlayIcon />
-            הפעלת שעון
-          </button>
+
+          {/* Timer button */}
+          <span style={{ position: 'relative', display: 'inline-flex' }}>
+            <button
+              type="button"
+              onClick={onTimerClick}
+              disabled={isTimerLoading}
+              title={isLongRunning ? 'השעון פועל מעל 8 שעות — שכחת לעצור?' : undefined}
+              style={{
+                ...pillBase,
+                background: isRunning ? '#E7000B' : '#EA7693',
+                color: '#FFFFFF',
+                opacity: isTimerLoading ? 0.6 : 1,
+                cursor: isTimerLoading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isRunning ? <StopIcon /> : <PlayIcon />}
+              {buttonLabel}
+            </button>
+            {isLongRunning && (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -6,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: '#FF9500',
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                !
+              </span>
+            )}
+          </span>
 
           <button
             type="button"
@@ -97,7 +158,6 @@ export default function AppHeader({ onLogout, onAddDay }: AppHeaderProps) {
             הוספת יום
           </button>
 
-          {/* יציאה */}
           <button
             type="button"
             onClick={onLogout}
