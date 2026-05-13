@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/clients',
     label: 'ניהול לקוחות',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/projects',
     label: 'ניהול פרויקטים',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <rect x="3" y="3" width="7" height="7" />
@@ -57,6 +59,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/tasks',
     label: 'ניהול משימות',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M9 11l3 3L22 4" />

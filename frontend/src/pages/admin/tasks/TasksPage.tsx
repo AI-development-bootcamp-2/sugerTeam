@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import {
   useAllClients,
@@ -8,6 +9,8 @@ import {
   useUpdateTask,
 } from '../../../services/entities.service';
 import type { TaskWithProject } from '../../../types/entities';
+import { useAuthStore } from '../../../store/authStore';
+import { UserRole } from '../../../types/auth';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import EmptyState from '../../../components/EmptyState';
@@ -343,6 +346,7 @@ function TaskRow({ task }: { task: TaskWithProject }) {
 }
 
 export default function TasksPage() {
+  const authUser = useAuthStore((s) => s.user);
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
@@ -366,6 +370,10 @@ export default function TasksPage() {
     setSelectedClientId(clientId || undefined);
     setSelectedProjectId(undefined);
   };
+
+  if (authUser !== null && authUser.role !== UserRole.ADMIN) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div dir="rtl" className="p-6">
