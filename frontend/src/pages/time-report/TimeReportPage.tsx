@@ -64,7 +64,7 @@ function useDrawer() {
   return { drawerOpen, openDrawer, closeDrawer };
 }
 
-// ─── T014 — Hebrew month label for subtitle ───────────────────────────────────
+// ─── Hebrew month label for subtitle ──────────────────────────────────────────
 
 function getMonthName(month: number, year: number): string {
   return new Date(year, month - 1, 1).toLocaleDateString('he-IL', { month: 'long' });
@@ -234,21 +234,6 @@ export default function TimeReportPage() {
           >
             <LockedMonthBanner isLocked={isLocked} />
 
-            {/* T014 — Title row */}
-            <div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: '#848891',
-                }}
-              >
-                רשימת הדיווחים החודשיים — לחודש{' '}
-                {getMonthName(selectedMonth, selectedYear)} {selectedYear}
-              </p>
-            </div>
-
             {/* KPI strip */}
             <KpiStrip
               monthlySummary={monthlySummary}
@@ -256,6 +241,31 @@ export default function TimeReportPage() {
               isLoading={isLoading}
               onOpen={openDrawer}
             />
+
+            {/* Daily breakdown title row */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: '#212525',
+                }}
+              >
+                פירוט יומי
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#848891',
+                }}
+              >
+                רשימת הדיווחים לחודש{' '}
+                {getMonthName(selectedMonth, selectedYear)} {selectedYear}
+              </p>
+            </div>
 
             {/* T031 — Day list or skeleton while loading */}
             {isLoading ? (
