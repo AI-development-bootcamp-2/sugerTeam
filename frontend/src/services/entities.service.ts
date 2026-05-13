@@ -69,9 +69,8 @@ export function useCreateProject() {
       const { data } = await apiClient.post<Project>('/api/v1/projects', payload);
       return data;
     },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['projects', 'active', variables.clientId] });
-      void queryClient.invalidateQueries({ queryKey: ['projects', 'byClient', variables.clientId] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }

@@ -51,6 +51,7 @@ function CreateTaskModal({
     reset,
     control,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<CreateTaskFormData>({
     defaultValues: { clientId: defaultClientId ?? '', projectId: defaultProjectId ?? '', name: '', description: '', startDate: '', endDate: '' },
@@ -120,23 +121,29 @@ function CreateTaskModal({
           />
           {errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}
         </div>
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium">תאריך התחלה</label>
-            <input
-              type="date"
-              {...register('startDate')}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-sm font-medium">תאריך התחלה</label>
+              <input
+                type="date"
+                {...register('startDate')}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-sm font-medium">תאריך סיום</label>
+              <input
+                type="date"
+                {...register('endDate', {
+                  validate: (val) =>
+                    !val || !getValues('startDate') || val >= getValues('startDate') || 'תאריך הסיום חייב להיות אחרי תאריך ההתחלה',
+                })}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium">תאריך סיום</label>
-            <input
-              type="date"
-              {...register('endDate')}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">תיאור</label>
@@ -179,6 +186,7 @@ function EditTaskModal({
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<EditTaskFormData>({
     defaultValues: {
@@ -213,23 +221,29 @@ function EditTaskModal({
             className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium">תאריך התחלה</label>
-            <input
-              type="date"
-              {...register('startDate')}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div className="flex flex-col gap-1">
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-sm font-medium">תאריך התחלה</label>
+              <input
+                type="date"
+                {...register('startDate')}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label className="text-sm font-medium">תאריך סיום</label>
+              <input
+                type="date"
+                {...register('endDate', {
+                  validate: (val) =>
+                    !val || !getValues('startDate') || val >= getValues('startDate') || 'תאריך הסיום חייב להיות אחרי תאריך ההתחלה',
+                })}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium">תאריך סיום</label>
-            <input
-              type="date"
-              {...register('endDate')}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          {errors.endDate && <p className="text-xs text-red-600">{errors.endDate.message}</p>}
         </div>
         <div className="flex justify-end gap-3">
           <button
