@@ -100,9 +100,10 @@ interface AbsenceFormCardProps {
   onClose?: () => void;
   flush?: boolean;
   initialAbsence?: AbsenceWithDocumentsDto;
+  onMutationSuccess?: () => void;
 }
 
-export function AbsenceFormCard({ onClose, flush = false, initialAbsence }: AbsenceFormCardProps) {
+export function AbsenceFormCard({ onClose, flush = false, initialAbsence, onMutationSuccess }: AbsenceFormCardProps) {
   const isEditing = !!initialAbsence;
   const [activeTab, setActiveTab] = useState<'absence' | 'work'>('absence');
   const userId = useAuthStore((s) => s.user?.id);
@@ -207,6 +208,8 @@ export function AbsenceFormCard({ onClose, flush = false, initialAbsence }: Abse
         }
         setSuccessMessage('ההיעדרות עודכנה');
         setPendingFile(null);
+        onMutationSuccess?.();
+        setTimeout(() => onClose?.(), 900);
       } else {
         const record = await createAbsence.mutateAsync({
           absenceType: data.absenceType,
@@ -220,6 +223,7 @@ export function AbsenceFormCard({ onClose, flush = false, initialAbsence }: Abse
         }
         setSuccessMessage('ההיעדרות נשמרה');
         setPendingFile(null);
+        onMutationSuccess?.();
         reset({
           startDate: today,
           endDate: today,

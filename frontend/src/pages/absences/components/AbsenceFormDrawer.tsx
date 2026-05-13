@@ -6,9 +6,10 @@ interface AbsenceFormDrawerProps {
   open: boolean;
   onClose: () => void;
   initialAbsence?: AbsenceWithDocumentsDto;
+  onMutationSuccess?: () => void;
 }
 
-export function AbsenceFormDrawer({ open, onClose, initialAbsence }: AbsenceFormDrawerProps) {
+export function AbsenceFormDrawer({ open, onClose, initialAbsence, onMutationSuccess }: AbsenceFormDrawerProps) {
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -56,6 +57,7 @@ export function AbsenceFormDrawer({ open, onClose, initialAbsence }: AbsenceForm
             onClose={onClose}
             flush
             initialAbsence={initialAbsence}
+            onMutationSuccess={onMutationSuccess}
           />
         )}
       </div>

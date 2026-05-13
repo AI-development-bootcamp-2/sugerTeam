@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useTimeEntriesData } from './hooks/useTimeEntriesData';
@@ -70,6 +71,7 @@ function getMonthName(month: number, year: number): string {
 
 export default function TimeReportPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const { selectedYear, selectedMonth, handlePrevMonth, handleNextMonth } =
@@ -101,11 +103,13 @@ export default function TimeReportPage() {
   }
 
   function handleEditAbsence(date: string) {
-    const entry = dayEntries.find((d) => d.date === date);
-    if (entry?.absenceId) {
-      setEditAbsenceId(entry.absenceId);
-      setAbsenceDrawerOpen(true);
-    }
+    const absence = absences.find((a) => {
+      const start = a.startDate.slice(0, 10);
+      const end = a.endDate.slice(0, 10);
+      return date >= start && date <= end;
+    });
+    setEditAbsenceId(absence?.id ?? null);
+    setAbsenceDrawerOpen(true);
   }
 
   const selectedAbsence = absences.find((a) => a.id === editAbsenceId);
@@ -277,8 +281,14 @@ export default function TimeReportPage() {
 
       <AbsenceFormDrawer
         open={absenceDrawerOpen}
-        onClose={() => { setAbsenceDrawerOpen(false); setEditAbsenceId(null); }}
+        onClose={() => {
+          setAbsenceDrawerOpen(false);
+          setEditAbsenceId(null);
+          void queryClient.invalidateQueries({ queryKey: ['absences'] });
+          refetch();
+        }}
         initialAbsence={selectedAbsence}
+        onMutationSuccess={refetch}
       />
     </>
   );

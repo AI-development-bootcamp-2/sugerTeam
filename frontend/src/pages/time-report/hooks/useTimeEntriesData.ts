@@ -159,6 +159,7 @@ export function useTimeEntriesData(year: number, month: number): UseTimeEntriesD
     refetch() {
       void daysQuery.refetch();
       void lockQuery.refetch();
+      void absencesQuery.refetch();
     },
   };
 }

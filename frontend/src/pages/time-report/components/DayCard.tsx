@@ -136,8 +136,9 @@ export default function DayCard({ dayEntry, isExpanded, onToggle, isLocked, onOp
           overflow: 'hidden',
           transition: 'max-height 0.3s ease',
           background: '#FFFFFF',
-          border: showBody ? '1px solid #ECECEC' : 'none',
-          borderTop: 'none',
+          borderLeft: showBody ? '1px solid #ECECEC' : 'none',
+          borderRight: showBody ? '1px solid #ECECEC' : 'none',
+          borderBottom: showBody ? '1px solid #ECECEC' : 'none',
           borderRadius: '0 0 12px 12px',
         }}
       >
