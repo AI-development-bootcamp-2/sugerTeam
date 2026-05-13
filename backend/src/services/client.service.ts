@@ -38,10 +38,8 @@ export async function updateClient(
   if (data.description !== undefined) updateData.description = data.description;
   if (data.isActive === false) {
     updateData.status = EntityStatus.INACTIVE;
-    updateData.deletedAt = new Date();
   } else if (data.isActive === true) {
     updateData.status = EntityStatus.ACTIVE;
-    updateData.deletedAt = null;
   }
 
   return prisma.client.update({ where: { id }, data: updateData });

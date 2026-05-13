@@ -21,16 +21,18 @@ export function checkMonthLock(): RequestHandler {
       const parts = yearMonthParam.split('-').map(Number);
       year = parts[0];
       month = parts[1];
-    } else if (req.body?.date) {
-      if (typeof req.body.date !== 'string') {
-        res.status(400).json({ error: 'שדה date חייב להיות מחרוזת' });
+    } else if (req.body?.date || req.body?.startDate) {
+      const rawDate: unknown = req.body.date ?? req.body.startDate;
+      const fieldName = req.body.date ? 'date' : 'startDate';
+      if (typeof rawDate !== 'string') {
+        res.status(400).json({ error: `שדה ${fieldName} חייב להיות מחרוזת` });
         return;
       }
-      if (!ISO_DATE_RE.test(req.body.date)) {
+      if (!ISO_DATE_RE.test(rawDate)) {
         res.status(400).json({ error: 'פורמט תאריך שגוי, נדרש yyyy-mm-dd' });
         return;
       }
-      const parts = req.body.date.split('-').map(Number);
+      const parts = rawDate.split('-').map(Number);
       year = parts[0];
       month = parts[1];
     } else {

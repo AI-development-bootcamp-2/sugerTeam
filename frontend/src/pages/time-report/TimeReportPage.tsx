@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useTimeReportData } from './hooks/useTimeReportData';
+import { useTimeEntriesData } from './hooks/useTimeEntriesData';
 import AppHeader from './components/AppHeader';
 import MonthPager from './components/MonthPager';
 import KpiStrip from './components/KpiStrip';
@@ -9,6 +9,8 @@ import DayList from './components/DayList';
 import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
 import LockedMonthBanner from './components/LockedMonthBanner';
+import DailyReportDrawer from './components/DailyReportDrawer';
+import { AbsenceFormDrawer } from '../absences/components/AbsenceFormDrawer';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -68,33 +70,34 @@ function getMonthName(month: number, year: number): string {
 
 export default function TimeReportPage() {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const { selectedYear, selectedMonth, handlePrevMonth, handleNextMonth } =
     useMonthNavigation();
   const { drawerOpen, openDrawer, closeDrawer } = useDrawer();
+  const [absenceDrawerOpen, setAbsenceDrawerOpen] = useState(false);
 
   const {
     dayEntries,
+    monthlyDays,
     monthlySummary,
     isLocked,
     isLoading,
     isError,
-    hasAbsenceError,
     refetch,
-  } = useTimeReportData(user?.id ?? '', selectedYear, selectedMonth);
+  } = useTimeEntriesData(selectedYear, selectedMonth);
 
-  // T034 — dismissible absence-error banner.
-  // Keyed to the selected month: dismissal is per-month, so navigating to a new
-  // month naturally resets the banner without any effect-based state mutation.
-  const [absenceBannerDismissedForMonth, setAbsenceBannerDismissedForMonth] = useState<string | null>(null);
-  const currentMonthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-  const dismissAbsenceBanner = useCallback(
-    () => setAbsenceBannerDismissedForMonth(currentMonthKey),
-    [currentMonthKey],
-  );
-  const showAbsenceBanner = hasAbsenceError && absenceBannerDismissedForMonth !== currentMonthKey;
+  // ─── Daily-report drawer ──────────────────────────────────────────────────
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  function handleOpenReport(date: string) {
+    setSelectedDate(date);
+  }
+
+  function handleCloseReport() {
+    setSelectedDate(null);
+  }
+
 
   function handleLogout() {
     clearAuth();
@@ -103,7 +106,7 @@ export default function TimeReportPage() {
 
   return (
     <>
-      <AppHeader onLogout={handleLogout} />
+      <AppHeader onLogout={handleLogout} onAddDay={() => setAbsenceDrawerOpen(true)} />
 
       <main
         dir="rtl"
@@ -174,41 +177,6 @@ export default function TimeReportPage() {
           >
             <LockedMonthBanner isLocked={isLocked} />
 
-            {/* T034 — Partial failure: absence data degradation banner */}
-            {showAbsenceBanner && (
-              <div
-                style={{
-                  background: '#FFF6DB',
-                  borderRadius: 8,
-                  padding: '10px 16px',
-                  display: 'flex',
-                  flexDirection: 'row-reverse',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: 14,
-                  color: '#B8860B',
-                }}
-              >
-                <span>חלק מהנתונים לא נטענו — מידע על היעדרויות אינו זמין</span>
-                <button
-                  type="button"
-                  onClick={dismissAbsenceBanner}
-                  aria-label="סגור"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: 16,
-                    color: '#B8860B',
-                    lineHeight: 1,
-                    padding: '0 4px',
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
             {/* T014 — Title row */}
             <div
               style={{
@@ -263,11 +231,26 @@ export default function TimeReportPage() {
             {isLoading ? (
               <DayCardSkeleton />
             ) : (
-              <DayList dayEntries={dayEntries} isLocked={isLocked} />
+              <DayList
+                dayEntries={dayEntries}
+                isLocked={isLocked}
+                onOpenReport={handleOpenReport}
+              />
             )}
           </div>
         )}
       </main>
+
+      {/* Daily report drawer */}
+      {selectedDate && (
+        <DailyReportDrawer
+          date={selectedDate}
+          isOpen={selectedDate !== null}
+          onClose={handleCloseReport}
+          existingReport={monthlyDays.find((d) => d.reportDate === selectedDate) ?? null}
+          isMonthLocked={isLocked}
+        />
+      )}
 
       {/* Monthly summary drawer */}
       <MonthlySummaryDrawer
@@ -278,6 +261,11 @@ export default function TimeReportPage() {
         summary={monthlySummary}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
+      />
+
+      <AbsenceFormDrawer
+        open={absenceDrawerOpen}
+        onClose={() => setAbsenceDrawerOpen(false)}
       />
     </>
   );

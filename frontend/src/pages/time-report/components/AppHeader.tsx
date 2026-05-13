@@ -1,5 +1,6 @@
 interface AppHeaderProps {
   onLogout: () => void;
+  onAddDay: () => void;
 }
 
 function LogoutIcon() {
@@ -44,7 +45,7 @@ const pillBase: React.CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
-export default function AppHeader({ onLogout }: AppHeaderProps) {
+export default function AppHeader({ onLogout, onAddDay }: AppHeaderProps) {
   return (
     <header
       data-testid="app-header"
@@ -87,9 +88,9 @@ export default function AppHeader({ onLogout }: AppHeaderProps) {
             הפעלת שעון
           </button>
 
-          {/* הוספת יום — placeholder, no onClick in v1 */}
           <button
             type="button"
+            onClick={onAddDay}
             style={{ ...pillBase, background: '#F09A37', color: '#FFFFFF' }}
           >
             <PlusCircleIcon />

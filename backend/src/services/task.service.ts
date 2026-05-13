@@ -1,14 +1,9 @@
 import { TaskStatus } from '@prisma/client';
 import type { Task, Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
+import { NotFoundError } from '@/lib/errors';
 
-export class NotFoundError extends Error {
-  status = 404;
-  constructor(message: string) {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
+export { NotFoundError };
 
 export async function createTask(data: { projectId: string; name: string; description?: string; startDate?: string; endDate?: string }): Promise<Task> {
   const project = await prisma.project.findUnique({ where: { id: data.projectId } });

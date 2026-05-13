@@ -2,22 +2,9 @@ import bcrypt from 'bcrypt';
 import { UserRole, UserStatus, User } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../prisma/client';
+import { ConflictError, NotFoundError } from '@/lib/errors';
 
-export class ConflictError extends Error {
-  status = 409;
-  constructor(message: string) {
-    super(message);
-    this.name = 'ConflictError';
-  }
-}
-
-export class NotFoundError extends Error {
-  status = 404;
-  constructor(message: string) {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
+export { ConflictError, NotFoundError };
 
 export type SafeUser = Omit<User, 'passwordHash'>;
 

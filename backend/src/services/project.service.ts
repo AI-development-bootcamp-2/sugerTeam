@@ -1,14 +1,9 @@
 import { EntityStatus } from '@prisma/client';
 import type { Project, Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
+import { NotFoundError } from '@/lib/errors';
 
-export class NotFoundError extends Error {
-  status = 404;
-  constructor(message: string) {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
+export { NotFoundError };
 
 export async function createProject(data: { clientId: string; name: string; description?: string; startDate?: string; endDate?: string }): Promise<Project> {
   const client = await prisma.client.findUnique({ where: { id: data.clientId } });
@@ -72,11 +67,9 @@ export async function updateProject(
   if (data.startDate   !== undefined) updateData.startDate   = data.startDate ? new Date(data.startDate) : null;
   if (data.endDate   !== undefined) updateData.endDate   = data.endDate   ? new Date(data.endDate)   : null;
   if (data.isActive === false) {
-    updateData.status    = EntityStatus.INACTIVE;
-    updateData.deletedAt = new Date();
+    updateData.status = EntityStatus.INACTIVE;
   } else if (data.isActive === true) {
-    updateData.status    = EntityStatus.ACTIVE;
-    updateData.deletedAt = null;
+    updateData.status = EntityStatus.ACTIVE;
   }
 
   return prisma.project.update({ where: { id }, data: updateData });
