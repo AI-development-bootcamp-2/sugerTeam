@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -104,24 +104,18 @@ export default function TimerCompletionDialog({
   const selectedProject  = availableProjects.find((p) => p.id === watchedProjectId);
   const availableTasks   = selectedProject?.tasks ?? [];
 
-  // T012 — overlap check whenever taskId changes
-  const [hasOverlap, setHasOverlap] = useState(false);
-
-  useEffect(() => {
-    if (!watchedTaskId) {
-      setHasOverlap(false);
-      return;
-    }
+  // T012 — overlap check: derived synchronously from props/form state
+  const hasOverlap = useMemo(() => {
+    if (!watchedTaskId) return false;
     const newStart = toMin(startHHMM);
     const newEnd   = toMin(stopHHMM);
-    const overlap = existingDayEntries
+    return existingDayEntries
       .filter((e) => e.taskId === watchedTaskId)
       .some((e) => {
         const overlapStart = Math.max(newStart, toMin(e.startTime));
         const overlapEnd   = Math.min(newEnd,   toMin(e.endTime));
         return overlapStart < overlapEnd;
       });
-    setHasOverlap(overlap);
   }, [watchedTaskId, startHHMM, stopHHMM, existingDayEntries]);
 
   function onSubmit(values: FormValues) {

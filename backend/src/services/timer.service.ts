@@ -1,4 +1,4 @@
-import { ActiveTimer } from '@prisma/client';
+import { ActiveTimer, Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { ConflictError, NotFoundError } from '@/lib/errors';
 
@@ -9,8 +9,8 @@ export async function getActiveTimer(userId: string): Promise<ActiveTimer | null
 export async function startTimer(userId: string): Promise<ActiveTimer> {
   try {
     return await prisma.activeTimer.create({ data: { userId } });
-  } catch (err: any) {
-    if (err?.code === 'P2002') {
+  } catch (err: unknown) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new ConflictError('כבר יש שעון פעיל. עצור אותו לפני שמתחיל חדש.');
     }
     throw err;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { ActiveTimerDto, StoppedTimerDto, TimerState } from '../../../types/time-report';
@@ -56,29 +56,24 @@ export function useTimer(): {
   const startMutation = useStartTimer();
   const stopMutation = useStopTimer();
 
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  // tickAt is updated only inside the interval callback — no synchronous setState in effect body
+  const [tickAt, setTickAt] = useState(() => Date.now());
 
-  // Initialise elapsed immediately when the query resolves to avoid a 1-second flash of zero
-  useEffect(() => {
-    if (activeTimer) {
-      setElapsedSeconds(
-        Math.floor((Date.now() - new Date(activeTimer.startedAt).getTime()) / 1000),
-      );
-    } else {
-      setElapsedSeconds(0);
-    }
-  }, [activeTimer]);
-
-  // Tick every second while a timer is running
   useEffect(() => {
     if (!activeTimer) return;
     const interval = setInterval(() => {
-      setElapsedSeconds(
-        Math.floor((Date.now() - new Date(activeTimer.startedAt).getTime()) / 1000),
-      );
+      setTickAt(Date.now());
     }, 1000);
     return () => clearInterval(interval);
   }, [activeTimer]);
+
+  const elapsedSeconds = useMemo(
+    () =>
+      activeTimer
+        ? Math.max(0, Math.floor((tickAt - new Date(activeTimer.startedAt).getTime()) / 1000))
+        : 0,
+    [activeTimer, tickAt],
+  );
 
   const timerState: TimerState = {
     isRunning: activeTimer != null,
