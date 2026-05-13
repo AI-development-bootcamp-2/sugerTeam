@@ -11,13 +11,10 @@ import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
 import LockedMonthBanner from './components/LockedMonthBanner';
 import DailyReportDrawer from './components/DailyReportDrawer';
-import TimerCompletionDialog from './components/TimerCompletionDialog';
+import type { InitialTimeEntryDefaults } from './components/DailyReportDrawer';
 import { AbsenceFormDrawer } from '../absences/components/AbsenceFormDrawer';
-import type { StoppedTimerDto } from '../../types/time-report';
-import type { EntryPayload } from '../../types/timeEntries';
 import { useTimer } from './hooks/useTimer';
-import { useUpsertDayReport } from './hooks/useTimeEntries';
-import { buildDayPayload, formatDate } from './utils/timeUtils';
+import { formatDate, formatTime } from './utils/timeUtils';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -99,19 +96,18 @@ export default function TimeReportPage() {
 
   // ─── Timer ────────────────────────────────────────────────────────────────
   const { timerState, startTimer, stopTimer, isStarting, isStopping } = useTimer();
-  const upsertDayReport = useUpsertDayReport();
-  const [completionData, setCompletionData] = useState<StoppedTimerDto | null>(null);
-
-  const timerDate = completionData ? formatDate(new Date(completionData.stoppedAt)) : null;
-  const timerDayEntries = timerDate
-    ? (monthlyDays.find((d) => d.reportDate === timerDate)?.entries ?? [])
-    : [];
+  const [timerInitialEntry, setTimerInitialEntry] = useState<InitialTimeEntryDefaults | null>(null);
 
   async function handleTimerClick() {
     try {
       if (timerState.isRunning) {
         const stopped = await stopTimer();
-        setCompletionData(stopped);
+        const stoppedDate = new Date(stopped.stoppedAt);
+        setTimerInitialEntry({
+          startTime: formatTime(new Date(stopped.startedAt)),
+          endTime:   formatTime(stoppedDate),
+        });
+        setSelectedDate(formatDate(stoppedDate));
       } else {
         await startTimer();
       }
@@ -120,35 +116,17 @@ export default function TimeReportPage() {
     }
   }
 
-  async function handleTimerConfirm(payload: EntryPayload) {
-    if (!completionData) return;
-    const today = formatDate(new Date(completionData.stoppedAt));
-    const existingDay = monthlyDays.find((d) => d.reportDate === today);
-    try {
-      await upsertDayReport.mutateAsync(
-        buildDayPayload(
-          payload,
-          today,
-          existingDay,
-          new Date(completionData.startedAt),
-          new Date(completionData.stoppedAt),
-        ),
-      );
-      setCompletionData(null);
-    } catch {
-      // error shown in dialog via upsertDayReport.isError
-    }
-  }
-
   // ─── Daily-report drawer ──────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   function handleOpenReport(date: string) {
+    setTimerInitialEntry(null);
     setSelectedDate(date);
   }
 
   function handleCloseReport() {
     setSelectedDate(null);
+    setTimerInitialEntry(null);
   }
 
   function handleEditAbsence(date: string) {
@@ -320,6 +298,7 @@ export default function TimeReportPage() {
           onClose={handleCloseReport}
           existingReport={monthlyDays.find((d) => d.reportDate === selectedDate) ?? null}
           isMonthLocked={isLocked}
+          initialTimeEntry={timerInitialEntry}
         />
       )}
 
@@ -333,21 +312,6 @@ export default function TimeReportPage() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
       />
-
-      {completionData && (
-        <TimerCompletionDialog
-          stoppedTimer={completionData}
-          existingDayEntries={timerDayEntries}
-          onConfirm={handleTimerConfirm}
-          onOpenFullForm={() => {
-            setSelectedDate(timerDate);
-            setCompletionData(null);
-          }}
-          onClose={() => setCompletionData(null)}
-          isSubmitting={upsertDayReport.isPending}
-          submitError={upsertDayReport.isError ? 'שגיאה בשמירת הרשומה. נסה שנית.' : null}
-        />
-      )}
 
       <AbsenceFormDrawer
         open={absenceDrawerOpen}

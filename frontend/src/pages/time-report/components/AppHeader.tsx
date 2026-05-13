@@ -98,10 +98,11 @@ export default function AppHeader({
           justifyContent: 'space-between',
         }}
       >
-        {/* Logo — RTL start (right) */}
-        <span style={{ fontWeight: 800, fontSize: 28, color: '#141E3E', letterSpacing: -0.5 }}>
-          abra
-        </span>
+        <img
+          src="/abra-logo-black.png"
+          alt="Abra"
+          style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+        />
 
         {/* Action buttons — RTL end (left) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -155,7 +156,7 @@ export default function AppHeader({
             style={{ ...pillBase, background: '#F09A37', color: '#FFFFFF' }}
           >
             <PlusCircleIcon />
-            הוספת יום
+            דיווח ידני
           </button>
 
           <button

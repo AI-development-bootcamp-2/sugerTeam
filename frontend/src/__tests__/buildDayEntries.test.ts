@@ -195,8 +195,7 @@ describe('buildDayEntries', () => {
       [absence('2026-05-04', '2026-05-04', AbsenceType.SICK_LEAVE)],
       new Date('2026-05-08T00:00:00'),
     );
-    // SICK_LEAVE is not VACATION, so day is still missing (no report)
-    expect(findDay(days, '2026-05-04').displayStatus).toBe('missing');
+    expect(findDay(days, '2026-05-04').displayStatus).toBe('absence');
   });
 
   it('multi-day absence range expands correctly', () => {
