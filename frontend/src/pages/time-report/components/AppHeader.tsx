@@ -102,11 +102,16 @@ export default function AppHeader({
           justifyContent: 'space-between',
         }}
       >
-        <img
-          src="/abra-logo-black.png"
-          alt="Abra"
-          style={{ height: 36, width: 'auto', objectFit: 'contain' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <img
+            src="/abra-logo-black.png"
+            alt="Abra"
+            style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+          />
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#212525' }}>
+            דיווח שעות
+          </h1>
+        </div>
 
         {centerSlot && (
           <div

@@ -154,6 +154,15 @@ export default function TimeReportPage() {
         timerState={timerState}
         onTimerClick={() => { void handleTimerClick(); }}
         isTimerLoading={isStarting || isStopping}
+        centerSlot={
+          <MonthPager
+            month={selectedMonth}
+            year={selectedYear}
+            onPrev={handlePrevMonth}
+            onNext={handleNextMonth}
+            disabled={isLoading}
+          />
+        }
       />
 
       <main
@@ -226,44 +235,18 @@ export default function TimeReportPage() {
             <LockedMonthBanner isLocked={isLocked} />
 
             {/* T014 — Title row */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'row-reverse',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <MonthPager
-                month={selectedMonth}
-                year={selectedYear}
-                onPrev={handlePrevMonth}
-                onNext={handleNextMonth}
-                disabled={isLoading}
-              />
-              <div>
-                <h1
-                  style={{
-                    margin: 0,
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: '#212525',
-                  }}
-                >
-                  דיווח שעות
-                </h1>
-                <p
-                  style={{
-                    margin: '4px 0 0',
-                    fontSize: 16,
-                    fontWeight: 500,
-                    color: '#848891',
-                  }}
-                >
-                  רשימת הדיווחים החודשיים — לחודש{' '}
-                  {getMonthName(selectedMonth, selectedYear)} {selectedYear}
-                </p>
-              </div>
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: '#848891',
+                }}
+              >
+                רשימת הדיווחים החודשיים — לחודש{' '}
+                {getMonthName(selectedMonth, selectedYear)} {selectedYear}
+              </p>
             </div>
 
             {/* KPI strip */}
