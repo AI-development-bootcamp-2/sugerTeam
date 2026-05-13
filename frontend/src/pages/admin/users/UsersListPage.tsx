@@ -69,26 +69,29 @@ function UserRow({ user, onEdit }: UserRowProps) {
             <button
               type="button"
               onClick={() => onEdit(user)}
-              className="rounded-md border border-gray-300 px-3 py-1 text-xs hover:bg-gray-50"
+              className="rounded-md p-1.5 hover:bg-gray-100"
+              aria-label="ערוך"
             >
-              ערוך
+              <img src="/edit-logo.png" className="h-4 w-4" alt="" />
             </button>
             {isActive ? (
               <button
                 type="button"
                 onClick={() => setConfirmAction('deactivate')}
-                className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
+                className="rounded-md p-1.5 hover:bg-red-50"
+                aria-label="השבת"
               >
-                השבת
+                <img src="/delete-logo.png" className="h-4 w-4" alt="" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => activateUser.mutate(user.id)}
                 disabled={activateUser.isPending}
-                className="rounded-md border border-green-300 px-3 py-1 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+                className="rounded-md p-1.5 hover:bg-green-50 disabled:opacity-50"
+                aria-label="הפעל"
               >
-                הפעל
+                <img src="/edit-logo.png" className="h-4 w-4" alt="" />
               </button>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
@@ -82,13 +82,13 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: loginResolver,
     defaultValues: { rememberMe: false },
   });
-  const rememberMe = watch('rememberMe');
+  const rememberMe = useWatch({ control, name: 'rememberMe', defaultValue: false });
 
   const mutation = useMutation({
     mutationFn: loginRequest,

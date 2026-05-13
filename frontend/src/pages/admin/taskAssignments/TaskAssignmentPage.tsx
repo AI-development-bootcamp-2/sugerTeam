@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   useAllClients,
   useProjectsByClient,
@@ -23,15 +23,10 @@ function EditAssignmentModal({
 }) {
   const { data: employees } = useActiveUsers();
   const syncAssignments = useSyncTaskAssignments();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    () => task.assignments.map((a) => a.user.id),
+  );
   const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedIds(task.assignments.map((a) => a.user.id));
-      setSearchQuery('');
-    }
-  }, [isOpen, task.assignments]);
 
   const selectedEmployees = employees?.filter((e) => selectedIds.includes(e.id)) ?? [];
   const availableResults = employees?.filter(
@@ -201,7 +196,7 @@ function AssignmentRow({ task }: { task: TaskWithAssignments }) {
         </td>
       </tr>
 
-      <EditAssignmentModal task={task} isOpen={editOpen} onClose={() => setEditOpen(false)} />
+      <EditAssignmentModal key={`${task.id}-${String(editOpen)}`} task={task} isOpen={editOpen} onClose={() => setEditOpen(false)} />
 
       <ConfirmDialog
         isOpen={confirmOpen}

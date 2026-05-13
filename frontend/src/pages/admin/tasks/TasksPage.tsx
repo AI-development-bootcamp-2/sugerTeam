@@ -406,8 +406,8 @@ export default function TasksPage() {
           <table className="w-full table-fixed">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">לקוח</th>
-                <th className="w-[12%] px-4 py-2 text-start text-sm font-semibold text-white">פרויקט</th>
+                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">שם לקוח</th>
+                <th className="w-[12%] px-4 py-2 text-start text-sm font-semibold text-white">שם פרויקט</th>
                 <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">שם משימה</th>
                 <th className="w-[23%] px-4 py-2 text-start text-sm font-semibold text-white">תיאור</th>
                 <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">התחלה</th>
