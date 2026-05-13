@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { AbsenceFormCard } from './AbsenceFormCard';
+import type { AbsenceWithDocumentsDto } from '../../../services/absences.service';
 
 interface AbsenceFormDrawerProps {
   open: boolean;
   onClose: () => void;
+  initialAbsence?: AbsenceWithDocumentsDto;
 }
 
-export function AbsenceFormDrawer({ open, onClose }: AbsenceFormDrawerProps) {
+export function AbsenceFormDrawer({ open, onClose, initialAbsence }: AbsenceFormDrawerProps) {
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -35,7 +37,7 @@ export function AbsenceFormDrawer({ open, onClose }: AbsenceFormDrawerProps) {
         dir="rtl"
         role="dialog"
         aria-modal="true"
-        aria-label="דיווח ידני"
+        aria-label={initialAbsence ? 'עריכת היעדרות' : 'דיווח ידני'}
         style={{
           position: 'fixed',
           top: 0,
@@ -48,7 +50,14 @@ export function AbsenceFormDrawer({ open, onClose }: AbsenceFormDrawerProps) {
           pointerEvents: open ? 'auto' : 'none',
         }}
       >
-        <AbsenceFormCard onClose={onClose} flush />
+        {open && (
+          <AbsenceFormCard
+            key={initialAbsence?.id ?? 'new'}
+            onClose={onClose}
+            flush
+            initialAbsence={initialAbsence}
+          />
+        )}
       </div>
     </>
   );

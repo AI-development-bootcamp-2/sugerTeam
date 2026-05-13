@@ -76,11 +76,13 @@ export default function TimeReportPage() {
     useMonthNavigation();
   const { drawerOpen, openDrawer, closeDrawer } = useDrawer();
   const [absenceDrawerOpen, setAbsenceDrawerOpen] = useState(false);
+  const [editAbsenceId, setEditAbsenceId] = useState<string | null>(null);
 
   const {
     dayEntries,
     monthlyDays,
     monthlySummary,
+    absences,
     isLocked,
     isLoading,
     isError,
@@ -98,6 +100,16 @@ export default function TimeReportPage() {
     setSelectedDate(null);
   }
 
+  function handleEditAbsence(date: string) {
+    const entry = dayEntries.find((d) => d.date === date);
+    if (entry?.absenceId) {
+      setEditAbsenceId(entry.absenceId);
+      setAbsenceDrawerOpen(true);
+    }
+  }
+
+  const selectedAbsence = absences.find((a) => a.id === editAbsenceId);
+
   function handleLogout() {
     clearAuth();
     void navigate('/login');
@@ -105,7 +117,7 @@ export default function TimeReportPage() {
 
   return (
     <>
-      <AppHeader onLogout={handleLogout} onAddDay={() => setAbsenceDrawerOpen(true)} />
+      <AppHeader onLogout={handleLogout} onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }} />
 
       <main
         dir="rtl"
@@ -234,6 +246,7 @@ export default function TimeReportPage() {
                 dayEntries={dayEntries}
                 isLocked={isLocked}
                 onOpenReport={handleOpenReport}
+                onEditAbsence={handleEditAbsence}
               />
             )}
           </div>
@@ -264,7 +277,8 @@ export default function TimeReportPage() {
 
       <AbsenceFormDrawer
         open={absenceDrawerOpen}
-        onClose={() => setAbsenceDrawerOpen(false)}
+        onClose={() => { setAbsenceDrawerOpen(false); setEditAbsenceId(null); }}
+        initialAbsence={selectedAbsence}
       />
     </>
   );
