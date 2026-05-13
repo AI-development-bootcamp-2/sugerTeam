@@ -103,6 +103,27 @@ async function assertRangeUnlocked(
   }
 }
 
+async function assertNoOverlap(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  excludeId?: string,
+): Promise<void> {
+  const overlap = await prisma.absenceReport.findFirst({
+    where: {
+      userId,
+      deletedAt: null,
+      startDate: { lte: endDate },
+      endDate:   { gte: startDate },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (overlap) {
+    throw new ValidationError('קיימת היעדרות חופפת בתאריכים אלו');
+  }
+}
+
 export type AbsenceDocumentSummary = Pick<
   AbsenceDocument,
   'id' | 'fileName' | 'mimeType' | 'uploadedAt'
@@ -144,6 +165,7 @@ export async function createAbsence(
   }
 
   await assertRangeUnlocked(startDate, endDate, actorRole);
+  await assertNoOverlap(input.userId, startDate, endDate);
 
   const calculatedAbsenceDays = calculateAbsenceDays(startDate, endDate);
 
@@ -214,6 +236,7 @@ export async function updateAbsence(
   const endMoved = nextEnd.getTime() !== existing.endDate.getTime();
   if (startMoved || endMoved) {
     await assertRangeUnlocked(nextStart, nextEnd, actorRole);
+    await assertNoOverlap(existing.userId, nextStart, nextEnd, id);
   }
 
   const datesChanged =

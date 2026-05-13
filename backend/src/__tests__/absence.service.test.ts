@@ -49,6 +49,7 @@ jest.mock('../services/file-storage.service', () => ({
 const lockMock = jest.mocked(prisma.monthLock.findUnique);
 const reportCreateMock = jest.mocked(prisma.absenceReport.create);
 const reportFindUniqueMock = jest.mocked(prisma.absenceReport.findUnique);
+const reportFindFirstMock = jest.mocked(prisma.absenceReport.findFirst);
 const reportUpdateMock = jest.mocked(prisma.absenceReport.update);
 const docCountMock = jest.mocked(prisma.absenceDocument.count);
 const docFindFirstMock = jest.mocked(prisma.absenceDocument.findFirst);
@@ -176,6 +177,49 @@ describe('createAbsence', () => {
     expect(reportCreateMock).toHaveBeenCalled();
   });
 
+  it('rejects when an overlapping absence already exists for the same user', async () => {
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce({ id: 'existing-1' } as never);
+
+    await expect(
+      createAbsence(
+        {
+          userId: ownerId,
+          absenceType: AbsenceType.VACATION,
+          startDate: '2026-05-04',
+          endDate:   '2026-05-06',
+          isPartial: false,
+        },
+        UserRole.EMPLOYEE,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(reportCreateMock).not.toHaveBeenCalled();
+  });
+
+  it('allows creation when no overlap exists', async () => {
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce(null);
+    reportCreateMock.mockResolvedValue(baseAbsence());
+
+    await createAbsence(
+      {
+        userId: ownerId,
+        absenceType: AbsenceType.VACATION,
+        startDate: '2026-05-04',
+        endDate:   '2026-05-06',
+        isPartial: false,
+      },
+      UserRole.EMPLOYEE,
+    );
+
+    expect(reportFindFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: ownerId, deletedAt: null }),
+      }),
+    );
+    expect(reportCreateMock).toHaveBeenCalled();
+  });
+
   it('SICK_LEAVE creates a record in DOCUMENT_PENDING status', async () => {
     lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
     reportCreateMock.mockResolvedValue({
@@ -220,6 +264,44 @@ describe('updateAbsence', () => {
     await expect(
       updateAbsence(absenceId, { isPartial: true }, ownerId, UserRole.EMPLOYEE),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('rejects when moving dates would overlap another absence', async () => {
+    reportFindUniqueMock.mockResolvedValue(baseAbsence() as never);
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce({ id: 'other-absence' } as never);
+
+    await expect(
+      updateAbsence(absenceId, { endDate: '2026-05-08' }, ownerId, UserRole.EMPLOYEE),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(reportUpdateMock).not.toHaveBeenCalled();
+    expect(reportFindFirstMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: { not: absenceId } }),
+      }),
+    );
+  });
+
+  it('allows date-changing update when the only overlap is the absence itself', async () => {
+    reportFindUniqueMock.mockResolvedValue(baseAbsence() as never);
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportFindFirstMock.mockResolvedValueOnce(null);
+    reportUpdateMock.mockResolvedValue(baseAbsence() as never);
+
+    await updateAbsence(absenceId, { endDate: '2026-05-08' }, ownerId, UserRole.EMPLOYEE);
+
+    expect(reportUpdateMock).toHaveBeenCalled();
+  });
+
+  it('skips the overlap check when dates are unchanged', async () => {
+    reportFindUniqueMock.mockResolvedValue(baseAbsence() as never);
+    lockMock.mockResolvedValue({ year: 2026, month: 5, isLocked: false } as never);
+    reportUpdateMock.mockResolvedValue(baseAbsence() as never);
+
+    await updateAbsence(absenceId, { isPartial: true }, ownerId, UserRole.EMPLOYEE);
+
+    expect(reportFindFirstMock).not.toHaveBeenCalled();
+    expect(reportUpdateMock).toHaveBeenCalled();
   });
 
   it('rejects an update that moves endDate into a locked month', async () => {
