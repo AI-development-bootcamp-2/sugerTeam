@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useTimeEntriesData } from './hooks/useTimeEntriesData';
@@ -10,7 +11,13 @@ import DayCardSkeleton from './components/DayCardSkeleton';
 import MonthlySummaryDrawer from './components/MonthlySummaryDrawer';
 import LockedMonthBanner from './components/LockedMonthBanner';
 import DailyReportDrawer from './components/DailyReportDrawer';
+import TimerCompletionDialog from './components/TimerCompletionDialog';
 import { AbsenceFormDrawer } from '../absences/components/AbsenceFormDrawer';
+import type { StoppedTimerDto } from '../../types/time-report';
+import type { EntryPayload } from '../../types/timeEntries';
+import { useTimer } from './hooks/useTimer';
+import { useUpsertDayReport } from './hooks/useTimeEntries';
+import { buildDayPayload, formatDate } from './utils/timeUtils';
 
 // ─── T008 — Month navigation state ───────────────────────────────────────────
 
@@ -70,22 +77,68 @@ function getMonthName(month: number, year: number): string {
 
 export default function TimeReportPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const { selectedYear, selectedMonth, handlePrevMonth, handleNextMonth } =
     useMonthNavigation();
   const { drawerOpen, openDrawer, closeDrawer } = useDrawer();
   const [absenceDrawerOpen, setAbsenceDrawerOpen] = useState(false);
+  const [editAbsenceId, setEditAbsenceId] = useState<string | null>(null);
 
   const {
     dayEntries,
     monthlyDays,
     monthlySummary,
+    absences,
     isLocked,
     isLoading,
     isError,
     refetch,
   } = useTimeEntriesData(selectedYear, selectedMonth);
+
+  // ─── Timer ────────────────────────────────────────────────────────────────
+  const { timerState, startTimer, stopTimer, isStarting, isStopping } = useTimer();
+  const upsertDayReport = useUpsertDayReport();
+  const [completionData, setCompletionData] = useState<StoppedTimerDto | null>(null);
+
+  const timerDate = completionData ? formatDate(new Date(completionData.stoppedAt)) : null;
+  const timerDayEntries = timerDate
+    ? (monthlyDays.find((d) => d.reportDate === timerDate)?.entries ?? [])
+    : [];
+
+  async function handleTimerClick() {
+    try {
+      if (timerState.isRunning) {
+        const stopped = await stopTimer();
+        setCompletionData(stopped);
+      } else {
+        await startTimer();
+      }
+    } catch {
+      // errors available via useTimer's startError / stopError
+    }
+  }
+
+  async function handleTimerConfirm(payload: EntryPayload) {
+    if (!completionData) return;
+    const today = formatDate(new Date(completionData.stoppedAt));
+    const existingDay = monthlyDays.find((d) => d.reportDate === today);
+    try {
+      await upsertDayReport.mutateAsync(
+        buildDayPayload(
+          payload,
+          today,
+          existingDay,
+          new Date(completionData.startedAt),
+          new Date(completionData.stoppedAt),
+        ),
+      );
+      setCompletionData(null);
+    } catch {
+      // error shown in dialog via upsertDayReport.isError
+    }
+  }
 
   // ─── Daily-report drawer ──────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -98,6 +151,17 @@ export default function TimeReportPage() {
     setSelectedDate(null);
   }
 
+  function handleEditAbsence(date: string) {
+    const absence = absences.find((a) => {
+      const start = a.startDate.slice(0, 10);
+      const end = a.endDate.slice(0, 10);
+      return date >= start && date <= end;
+    });
+    setEditAbsenceId(absence?.id ?? null);
+    setAbsenceDrawerOpen(true);
+  }
+
+  const selectedAbsence = absences.find((a) => a.id === editAbsenceId);
 
   function handleLogout() {
     clearAuth();
@@ -106,7 +170,13 @@ export default function TimeReportPage() {
 
   return (
     <>
-      <AppHeader onLogout={handleLogout} onAddDay={() => setAbsenceDrawerOpen(true)} />
+      <AppHeader
+        onLogout={handleLogout}
+        onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }}
+        timerState={timerState}
+        onTimerClick={() => { void handleTimerClick(); }}
+        isTimerLoading={isStarting || isStopping}
+      />
 
       <main
         dir="rtl"
@@ -235,6 +305,7 @@ export default function TimeReportPage() {
                 dayEntries={dayEntries}
                 isLocked={isLocked}
                 onOpenReport={handleOpenReport}
+                onEditAbsence={handleEditAbsence}
               />
             )}
           </div>
@@ -263,9 +334,31 @@ export default function TimeReportPage() {
         onNextMonth={handleNextMonth}
       />
 
+      {completionData && (
+        <TimerCompletionDialog
+          stoppedTimer={completionData}
+          existingDayEntries={timerDayEntries}
+          onConfirm={handleTimerConfirm}
+          onOpenFullForm={() => {
+            setSelectedDate(timerDate);
+            setCompletionData(null);
+          }}
+          onClose={() => setCompletionData(null)}
+          isSubmitting={upsertDayReport.isPending}
+          submitError={upsertDayReport.isError ? 'שגיאה בשמירת הרשומה. נסה שנית.' : null}
+        />
+      )}
+
       <AbsenceFormDrawer
         open={absenceDrawerOpen}
-        onClose={() => setAbsenceDrawerOpen(false)}
+        onClose={() => {
+          setAbsenceDrawerOpen(false);
+          setEditAbsenceId(null);
+          void queryClient.invalidateQueries({ queryKey: ['absences'] });
+          refetch();
+        }}
+        initialAbsence={selectedAbsence}
+        onMutationSuccess={refetch}
       />
     </>
   );

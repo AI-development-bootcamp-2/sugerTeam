@@ -81,6 +81,12 @@ export default function StatusTag({ status, reportedMinutes = 0 }: StatusTagProp
           חופשה
         </span>
       );
+    case 'absence':
+      return (
+        <span style={{ ...base, background: '#EDE8FF', color: '#6B3DC9' }}>
+          היעדרות
+        </span>
+      );
     case 'irregular':
       return (
         <span style={{ ...base, background: '#FFF3CD', color: '#B8860B' }}>

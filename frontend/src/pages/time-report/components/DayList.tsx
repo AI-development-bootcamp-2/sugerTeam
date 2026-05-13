@@ -6,6 +6,7 @@ interface DayListProps {
   dayEntries: DayEntry[];
   isLocked: boolean;
   onOpenReport?: (date: string) => void;
+  onEditAbsence?: (date: string) => void;
 }
 
 function todayStr(): string {
@@ -16,7 +17,7 @@ function todayStr(): string {
   return `${y}-${m}-${day}`;
 }
 
-export default function DayList({ dayEntries, isLocked, onOpenReport }: DayListProps) {
+export default function DayList({ dayEntries, isLocked, onOpenReport, onEditAbsence }: DayListProps) {
   // T009 — single-expand: null = all collapsed; a date string = that card is open.
   // Initialised to today so the current day's card opens by default.
   const [expandedDate, setExpandedDate] = useState<string | null>(todayStr);
@@ -37,6 +38,7 @@ export default function DayList({ dayEntries, isLocked, onOpenReport }: DayListP
           onToggle={() => toggleExpanded(entry.date)}
           isLocked={isLocked}
           onOpenReport={onOpenReport ? () => onOpenReport(entry.date) : undefined}
+          onEditAbsence={onEditAbsence ? () => onEditAbsence(entry.date) : undefined}
         />
       ))}
     </div>

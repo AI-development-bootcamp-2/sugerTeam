@@ -95,6 +95,7 @@ model User {
   auditTargeted     AuditLog[]        @relation("TargetUser")
   absenceDocuments  AbsenceDocument[]
   refreshTokens     RefreshToken[]
+  activeTimer       ActiveTimer?
 }
 
 model Client {
@@ -284,4 +285,13 @@ model WorkCalendarDay {
   isWorkingDay  Boolean
   standardHours Decimal  @default(9.0) @db.Decimal(4, 2)
   description   String?
+}
+
+model ActiveTimer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  startedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("active_timers")
 }
