@@ -259,9 +259,6 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
             {project.description ?? '—'}
           </div>
         </td>
-        <td className="overflow-hidden px-4 py-3">
-          <div className="truncate text-sm text-gray-500">{project.primaryManager?.fullName ?? '—'}</div>
-        </td>
         <td className="px-4 py-3 text-sm text-gray-500">{formatDate(project.startDate)}</td>
         <td className="px-4 py-3 text-sm text-gray-500">{formatDate(project.endDate)}</td>
         <td className="px-4 py-3">
@@ -364,10 +361,9 @@ export default function ProjectsPage() {
           <table className="w-full table-fixed">
             <thead className="bg-[#141E3E]">
               <tr>
-                <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">שם לקוח</th>
-                <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">שם פרויקט</th>
-                <th className="w-[20%] px-4 py-2 text-start text-sm font-semibold text-white">תיאור</th>
-                <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">שם מנהל פרוייקט</th>
+                <th className="w-[15%] px-4 py-2 text-start text-sm font-semibold text-white">שם לקוח</th>
+                <th className="w-[20%] px-4 py-2 text-start text-sm font-semibold text-white">שם פרויקט</th>
+                <th className="w-[25%] px-4 py-2 text-start text-sm font-semibold text-white">תיאור</th>
                 <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">התחלה</th>
                 <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">סיום</th>
                 <th className="w-[10%] px-4 py-2 text-start text-sm font-semibold text-white">סטטוס</th>

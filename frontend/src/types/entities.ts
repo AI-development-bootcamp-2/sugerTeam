@@ -30,21 +30,13 @@ export interface Project {
   description: string | null;
   startDate: string | null;
   endDate: string | null;
-  primaryManagerId: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 }
 
-export interface Manager {
-  id: string;
-  fullName: string;
-  role: string;
-}
-
 export interface ProjectWithRelations extends Project {
-  primaryManager: Manager | null;
   client: { id: string; name: string };
 }
 

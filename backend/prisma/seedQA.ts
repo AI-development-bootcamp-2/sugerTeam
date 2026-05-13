@@ -158,7 +158,6 @@ async function main(): Promise<void> {
   for (let i = 0; i < PROJECT_TEMPLATES.length; i++) {
     const p = PROJECT_TEMPLATES[i];
     const clientId = clientIds[p.clientIdx];
-    const managerId = userIds[(p.clientIdx + i) % userIds.length];
     const existing = await prisma.project.findFirst({ where: { name: p.name, clientId } });
     const project = existing
       ? existing
@@ -167,7 +166,6 @@ async function main(): Promise<void> {
             clientId,
             name: p.name,
             description: p.description,
-            primaryManagerId: managerId,
             startDate: new Date('2025-01-01'),
             endDate: new Date('2025-12-31'),
             status: 'ACTIVE',
