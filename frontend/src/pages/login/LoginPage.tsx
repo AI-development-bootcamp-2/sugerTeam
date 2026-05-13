@@ -55,7 +55,7 @@ function getErrorMessage(error: unknown): string {
 
 function AbraLogo() {
   return (
-    <img src="/abra-logo-black.png" alt="Abra" style={{ height: 60 }} />
+    <img src="/abra-logo-black.png" alt="Abra" style={{ height: 40 }} />
   );
 }
 
@@ -82,11 +82,13 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: loginResolver,
     defaultValues: { rememberMe: false },
   });
+  const rememberMe = watch('rememberMe');
 
   const mutation = useMutation({
     mutationFn: loginRequest,
@@ -117,7 +119,9 @@ export function LoginPage() {
     <main
       style={{
         fontFamily: '"Assistant", -apple-system, "Segoe UI", system-ui, sans-serif',
-        background: '#F2F2F7',
+        backgroundImage: 'url(/login-background.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
@@ -131,11 +135,11 @@ export function LoginPage() {
           maxWidth: 640,
           borderRadius: 12,
           background: '#fff',
-          padding: '48px',
+          padding: '28px 48px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 32,
+          gap: 20,
           boxShadow:
             '0 15px 33px rgba(0,0,0,0.10), 0 59px 59px rgba(0,0,0,0.09), 0 134px 80px rgba(0,0,0,0.05), 0 238px 95px rgba(0,0,0,0.01)',
           margin: '32px 16px',
@@ -154,17 +158,6 @@ export function LoginPage() {
           }}
         >
           👋 ברוכים הבאים למערכת הניהול של אברא
-          <small
-            style={{
-              display: 'block',
-              fontWeight: 500,
-              fontSize: 18,
-              color: '#848891',
-              marginTop: 8,
-            }}
-          >
-            התחברו עם המייל והסיסמה שלכם
-          </small>
         </h1>
 
         <form
@@ -251,7 +244,7 @@ export function LoginPage() {
           </div>
 
           {/* Remember me */}
-          <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', marginTop: -4 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', marginTop: -4 }}>
             <label
               style={{
                 display: 'inline-flex',
@@ -264,20 +257,27 @@ export function LoginPage() {
                 whiteSpace: 'nowrap',
               }}
             >
-              <input {...register('rememberMe')} id="rememberMe" type="checkbox" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }} />
+              <input {...register('rememberMe')} id="rememberMe" type="checkbox" style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} />
               <span
                 style={{
                   width: 18,
                   height: 18,
-                  border: '1.5px solid #B5B9C2',
+                  border: `1.5px solid ${rememberMe ? '#0C69FF' : '#B5B9C2'}`,
                   borderRadius: 4,
-                  background: '#fff',
+                  background: rememberMe ? '#0C69FF' : '#fff',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  transition: 'background .15s ease, border-color .15s ease',
                 }}
-              />
+              >
+                {rememberMe && (
+                  <svg viewBox="0 0 12 10" fill="none" style={{ width: 10, height: 8 }}>
+                    <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
               זכור אותי
             </label>
           </div>
@@ -307,7 +307,7 @@ export function LoginPage() {
               opacity: mutation.isPending ? 0.7 : 1,
             }}
           >
-            {mutation.isPending ? '...מתחבר' : 'כניסה'}
+            {mutation.isPending ? '...מתחבר' : 'התחבר'}
           </button>
         </form>
       </div>
