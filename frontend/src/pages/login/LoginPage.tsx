@@ -55,31 +55,7 @@ function getErrorMessage(error: unknown): string {
 
 function AbraLogo() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <svg
-        viewBox="-2 -6 100 68"
-        aria-hidden="true"
-        style={{ width: 96, height: 60, display: 'inline-block' }}
-      >
-        <rect x="22" y="0" width="22" height="22" rx="3" transform="rotate(45 33 11)" fill="#F09A37" />
-        <rect x="52" y="0" width="22" height="22" rx="3" transform="rotate(45 63 11)" fill="#E97A2E" />
-        <circle cx="14" cy="44" r="12" fill="#F09A37" />
-        <polygon points="58.2,48.2 52.2,54.2 43.8,54.2 37.8,48.2 37.8,39.8 43.8,33.8 52.2,33.8 58.2,39.8" fill="#EA7693" />
-        <path d="M 70 32 H 86 A 12 12 0 0 1 70 56 Z" fill="#EA7693" />
-      </svg>
-      <span
-        style={{
-          fontFamily: '"Assistant", sans-serif',
-          fontWeight: 800,
-          fontSize: 56,
-          color: '#141E3E',
-          letterSpacing: '-0.5px',
-          lineHeight: 1,
-        }}
-      >
-        abra
-      </span>
-    </div>
+    <img src="/abra-logo-black.png" alt="Abra" style={{ height: 60 }} />
   );
 }
 
