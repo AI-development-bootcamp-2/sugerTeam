@@ -6,12 +6,16 @@ const router = Router();
 
 const REFRESH_COOKIE = 'refreshToken';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const cookieOptions = {
-  httpOnly: true,
-  sameSite: 'strict' as const,
-  secure: process.env.NODE_ENV === 'production',
-  maxAge: THIRTY_DAYS_MS,
-};
+
+function buildCookieOptions(remember: boolean) {
+  return {
+    httpOnly: true,
+    sameSite: 'strict' as const,
+    secure: process.env.NODE_ENV === 'production',
+    // Omit maxAge when remember is false → browser-session cookie, cleared on browser close
+    ...(remember ? { maxAge: THIRTY_DAYS_MS } : {}),
+  };
+}
 
 const clearCookieOptions = {
   httpOnly: true,
@@ -22,6 +26,7 @@ const clearCookieOptions = {
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional(),
 });
 
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
@@ -32,13 +37,14 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
   }
 
   try {
-    const { accessToken, refreshToken, user } = await login(
+    const { accessToken, refreshToken, remember, user } = await login(
       result.data.email,
       result.data.password,
+      result.data.rememberMe ?? false,
       req.headers['user-agent'],
       req.ip,
     );
-    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
+    res.cookie(REFRESH_COOKIE, refreshToken, buildCookieOptions(remember));
     res.status(200).json({ accessToken, user });
   } catch (err: unknown) {
     if (err instanceof AuthError) {
@@ -57,8 +63,8 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
   }
 
   try {
-    const { accessToken, refreshToken, user } = await refreshTokens(token);
-    res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions);
+    const { accessToken, refreshToken, remember, user } = await refreshTokens(token);
+    res.cookie(REFRESH_COOKIE, refreshToken, buildCookieOptions(remember));
     res.status(200).json({ accessToken, user });
   } catch (err: unknown) {
     if (err instanceof AuthError) {

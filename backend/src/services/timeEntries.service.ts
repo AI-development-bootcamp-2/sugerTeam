@@ -1,4 +1,4 @@
-import { DailyReportStatus, EntityStatus, TaskStatus, WorkLocation } from '@prisma/client';
+import { DailyReportStatus, EntityStatus, TaskStatus, UserRole, WorkLocation } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
@@ -209,9 +209,11 @@ export async function getMonthlyDays(userId: string, year: number, month: number
   });
 }
 
-export async function upsertDayReport(userId: string, data: DayReportInput) {
+export async function upsertDayReport(userId: string, data: DayReportInput, actorRole?: UserRole) {
   const [year, month] = data.reportDate.split('-').map(Number);
-  await assertMonthNotLocked(year, month);
+  if (actorRole !== UserRole.ADMIN) {
+    await assertMonthNotLocked(year, month);
+  }
 
   const reportDateObj = parseDateUTC(data.reportDate);
 
@@ -302,9 +304,11 @@ export async function upsertDayReport(userId: string, data: DayReportInput) {
   };
 }
 
-export async function deleteDayReport(userId: string, reportDate: string): Promise<void> {
+export async function deleteDayReport(userId: string, reportDate: string, actorRole?: UserRole): Promise<void> {
   const [year, month] = reportDate.split('-').map(Number);
-  await assertMonthNotLocked(year, month);
+  if (actorRole !== UserRole.ADMIN) {
+    await assertMonthNotLocked(year, month);
+  }
 
   const reportDateObj = parseDateUTC(reportDate);
   const report = await prisma.dailyReport.findFirst({
