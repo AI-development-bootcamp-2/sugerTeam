@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAllClients, useCreateClient, useUpdateClient } from '../../../services/entities.service';
 import type { Client } from '../../../types/entities';
+import { useAuthStore } from '../../../store/authStore';
+import { UserRole } from '../../../types/auth';
 import Modal from '../../../components/Modal';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import EmptyState from '../../../components/EmptyState';
@@ -193,6 +196,7 @@ function ClientRow({ client }: { client: Client }) {
 }
 
 export default function ClientsPage() {
+  const authUser = useAuthStore((s) => s.user);
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState('');
   const { data: clients, isLoading } = useAllClients();
@@ -200,6 +204,10 @@ export default function ClientsPage() {
   const filtered = clients?.filter((c) =>
     c.name.includes(search) || (c.description ?? '').includes(search),
   );
+
+  if (authUser !== null && authUser.role !== UserRole.ADMIN) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div dir="rtl" className="p-6">

@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/clients',
     label: 'ניהול לקוחות',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/projects',
     label: 'ניהול פרויקטים',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <rect x="3" y="3" width="7" height="7" />
@@ -57,6 +59,7 @@ const NAV_ITEMS: NavItemDef[] = [
   {
     to: '/admin/tasks',
     label: 'ניהול משימות',
+    adminOnly: true,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
         <path d="M9 11l3 3L22 4" />
@@ -73,6 +76,17 @@ const NAV_ITEMS: NavItemDef[] = [
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
         <line x1="16" y1="11" x2="22" y2="11" />
+      </svg>
+    ),
+  },
+  {
+    to: '/admin/months',
+    label: 'נעילת חודשים',
+    adminOnly: true,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0">
+        <rect x="3" y="11" width="18" height="10" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
       </svg>
     ),
   },
