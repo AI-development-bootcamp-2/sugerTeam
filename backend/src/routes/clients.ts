@@ -37,7 +37,7 @@ router.get('/active', async (_req: Request, res: Response, next: NextFunction) =
   }
 });
 
-router.get('/', requireRole(UserRole.ADMIN), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const clients = await listAllClients();
     res.status(200).json(clients);

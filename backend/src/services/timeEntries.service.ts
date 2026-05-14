@@ -335,7 +335,17 @@ export async function deleteDayReport(userId: string, reportDate: string, actorR
   ]);
 }
 
-export async function getDropdownData(userId: string) {
+export async function getDropdownData(userId: string, role: UserRole) {
+  const isAdmin = role === UserRole.ADMIN;
+
+  const taskWhere = isAdmin
+    ? { status: TaskStatus.OPEN, deletedAt: null }
+    : {
+        status: TaskStatus.OPEN,
+        deletedAt: null,
+        assignments: { some: { userId } },
+      };
+
   const clients = await prisma.client.findMany({
     where: { status: EntityStatus.ACTIVE, deletedAt: null },
     include: {
@@ -343,14 +353,7 @@ export async function getDropdownData(userId: string) {
         where: { status: EntityStatus.ACTIVE, deletedAt: null },
         include: {
           tasks: {
-            where: {
-              status: TaskStatus.OPEN,
-              deletedAt: null,
-              OR: [
-                { assignments: { none: {} } },
-                { assignments: { some: { userId } } },
-              ],
-            },
+            where: taskWhere,
             select:  { id: true, name: true },
             orderBy: { name: 'asc' },
           },
@@ -361,8 +364,17 @@ export async function getDropdownData(userId: string) {
     orderBy: { name: 'asc' },
   });
 
+  const filteredClients = isAdmin
+    ? clients
+    : clients
+        .map((c) => ({
+          ...c,
+          projects: c.projects.filter((p) => p.tasks.length > 0),
+        }))
+        .filter((c) => c.projects.length > 0);
+
   return {
-    clients: clients.map((c) => ({
+    clients: filteredClients.map((c) => ({
       id:   c.id,
       name: c.name,
       projects: c.projects.map((p) => ({

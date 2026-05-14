@@ -79,7 +79,7 @@ router.get(
   '/dropdown-data',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const data = await getDropdownData(req.user!.userId);
+      const data = await getDropdownData(req.user!.userId, req.user!.role);
       res.status(200).json(data);
     } catch (err) {
       next(err);

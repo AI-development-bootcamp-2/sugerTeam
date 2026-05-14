@@ -1,4 +1,4 @@
-import { DailyReportStatus } from '@prisma/client';
+import { DailyReportStatus, UserRole } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import {
   upsertDayReport,
@@ -270,16 +270,16 @@ describe('getDropdownData', () => {
       },
     ] as never);
 
-    const result = await getDropdownData(USER_ID);
+    const result = await getDropdownData(USER_ID, UserRole.ADMIN);
 
     expect(result.clients).toHaveLength(1);
     expect(result.clients[0].projects[0].tasks[0].id).toBe('t1');
   });
 
-  it('filters by ACTIVE clients and OPEN tasks with user assignment OR no assignment', async () => {
+  it('for EMPLOYEE, filters tasks to those assigned to the user only', async () => {
     jest.mocked(prisma.client.findMany).mockResolvedValue([]);
 
-    await getDropdownData(USER_ID);
+    await getDropdownData(USER_ID, UserRole.EMPLOYEE);
 
     expect(prisma.client.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -290,11 +290,53 @@ describe('getDropdownData', () => {
               tasks: expect.objectContaining({
                 where: expect.objectContaining({
                   status: 'OPEN',
-                  OR: [
-                    { assignments: { none: {} } },
-                    { assignments: { some: { userId: USER_ID } } },
-                  ],
+                  assignments: { some: { userId: USER_ID } },
                 }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('for EMPLOYEE, drops clients/projects that have no remaining tasks', async () => {
+    jest.mocked(prisma.client.findMany).mockResolvedValue([
+      {
+        id: 'c1', name: 'HasTasks',
+        projects: [
+          { id: 'p1', name: 'P1', tasks: [{ id: 't1', name: 'T1' }] },
+          { id: 'p2', name: 'P2 — empty', tasks: [] },
+        ],
+      },
+      {
+        id: 'c2', name: 'NoTasks',
+        projects: [{ id: 'p3', name: 'P3', tasks: [] }],
+      },
+    ] as never);
+
+    const result = await getDropdownData(USER_ID, UserRole.EMPLOYEE);
+
+    expect(result.clients).toHaveLength(1);
+    expect(result.clients[0].id).toBe('c1');
+    expect(result.clients[0].projects).toHaveLength(1);
+    expect(result.clients[0].projects[0].id).toBe('p1');
+  });
+
+  it('for ADMIN, does not filter by assignments and keeps empty clients/projects', async () => {
+    jest.mocked(prisma.client.findMany).mockResolvedValue([
+      { id: 'c1', name: 'Empty', projects: [{ id: 'p1', name: 'P', tasks: [] }] },
+    ] as never);
+
+    await getDropdownData(USER_ID, UserRole.ADMIN);
+
+    expect(prisma.client.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          projects: expect.objectContaining({
+            include: expect.objectContaining({
+              tasks: expect.objectContaining({
+                where: expect.not.objectContaining({ assignments: expect.anything() }),
               }),
             }),
           }),
