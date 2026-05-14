@@ -4,7 +4,9 @@
   "packageManager": "pnpm@10.33.4",
   "scripts": {
     "dev:backend": "pnpm --filter backend dev",
-    "dev:frontend": "pnpm --filter frontend dev"
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm --filter backend build",
+    "start": "pnpm --filter backend start"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "bcrypt", "prisma"],
