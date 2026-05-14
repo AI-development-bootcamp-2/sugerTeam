@@ -136,6 +136,28 @@ describe('PATCH /users/:id', () => {
     expect(r.body.email).toBe(TEST_EMAIL);
     expect(r.body).not.toHaveProperty('passwordHash');
   });
+
+  it('admin cannot change their own role', async () => {
+    const me = await prisma.user.findUnique({ where: { email: 'admin@company.com' } });
+    const r = await request(app)
+      .patch(`/api/v1/users/${me!.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ role: 'EMPLOYEE' });
+    expect(r.status).toBe(403);
+
+    const after = await prisma.user.findUnique({ where: { id: me!.id } });
+    expect(after?.role).toBe('ADMIN');
+  });
+
+  it('admin can still update their own non-role fields', async () => {
+    const me = await prisma.user.findUnique({ where: { email: 'admin@company.com' } });
+    const r = await request(app)
+      .patch(`/api/v1/users/${me!.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ fullName: me!.fullName });
+    expect(r.status).toBe(200);
+    expect(r.body.role).toBe('ADMIN');
+  });
 });
 
 describe('PATCH /users/:id/deactivate + activate', () => {
