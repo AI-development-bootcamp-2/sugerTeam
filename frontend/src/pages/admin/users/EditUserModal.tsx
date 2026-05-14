@@ -4,6 +4,7 @@ import type { Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useUpdateUser, useDeactivateUser, useActivateUser } from '../../../services/users.service';
 import { ROLE_LABELS, ALL_ROLES } from './userConstants';
+import { useAuthStore } from '../../../store/authStore';
 import type { User } from '../../../types/entities';
 
 const editUserSchema = z.object({
@@ -50,6 +51,8 @@ export function EditUserModal({ user, onClose, onSuccess }: Props) {
   const updateUser = useUpdateUser();
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
+  const authUser = useAuthStore((s) => s.user);
+  const isSelf = authUser?.id === user.id;
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'deactivate' | 'activate' | null>(null);
   const isActive = user.status === 'ACTIVE';
@@ -101,8 +104,9 @@ export function EditUserModal({ user, onClose, onSuccess }: Props) {
             id="edit-user-form"
             onSubmit={handleSubmit((data) => {
               setServerError(null);
+              const payload = isSelf ? { fullName: data.fullName, email: data.email } : data;
               updateUser.mutate(
-                { id: user.id, ...data },
+                { id: user.id, ...payload },
                 {
                   onSuccess: () => {
                     onSuccess('פרטי המשתמש עודכנו');
@@ -145,7 +149,8 @@ export function EditUserModal({ user, onClose, onSuccess }: Props) {
               <label className="text-sm font-medium text-gray-700">תפקיד</label>
               <select
                 {...register('role')}
-                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                disabled={isSelf}
+                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
               >
                 {ALL_ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -153,6 +158,9 @@ export function EditUserModal({ user, onClose, onSuccess }: Props) {
                   </option>
                 ))}
               </select>
+              {isSelf && (
+                <p className="text-xs text-gray-500">לא ניתן לשנות את התפקיד של עצמך</p>
+              )}
             </div>
 
             {serverError && (
