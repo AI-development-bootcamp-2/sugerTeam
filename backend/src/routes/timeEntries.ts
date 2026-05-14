@@ -141,7 +141,7 @@ router.post(
     }
 
     try {
-      const day = await upsertDayReport(req.user!.userId, result.data);
+      const day = await upsertDayReport(req.user!.userId, result.data, req.user!.role);
       res.status(201).json(day);
     } catch (err) {
       handleServiceError(err, res, next);
@@ -168,7 +168,7 @@ router.put(
     }
 
     try {
-      const day = await upsertDayReport(req.user!.userId, bodyResult.data);
+      const day = await upsertDayReport(req.user!.userId, bodyResult.data, req.user!.role);
       res.status(200).json(day);
     } catch (err) {
       handleServiceError(err, res, next);
@@ -186,7 +186,7 @@ router.delete(
     }
 
     try {
-      await deleteDayReport(req.user!.userId, paramResult.data.reportDate);
+      await deleteDayReport(req.user!.userId, paramResult.data.reportDate, req.user!.role);
       res.status(204).send();
     } catch (err) {
       handleServiceError(err, res, next);

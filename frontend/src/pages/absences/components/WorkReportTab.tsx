@@ -10,6 +10,7 @@ import {
 } from '../../time-report/hooks/useTimeEntries';
 import { useMonthLock } from '../../time-report/hooks/useMonthLock';
 import TimeEntryBlock from '../../time-report/components/TimeEntryBlock';
+import { DayTimeRangeFields } from '../../time-report/components/WorkReportUi';
 import type { DayReportFormValues } from '../../time-report/components/DailyReportDrawer';
 
 // ─── Schema (identical to DailyReportDrawer) ─────────────────────────────────
@@ -311,33 +312,11 @@ export function WorkReportTab({ onSwitchToAbsence, onClose }: WorkReportTabProps
 
       {/* Scrollable form body */}
       <div dir="rtl" style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Day-level time range */}
-        <div style={{ background: '#FFFFFF', borderRadius: 12, padding: 16, display: 'flex', gap: 12, flexDirection: 'row-reverse' }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 4, textAlign: 'right' }}>תחילת יום</label>
-            <input
-              type="time"
-              {...methods.register('dayStartTime')}
-              disabled={isReadOnly}
-              style={{ width: '100%', height: 40, border: '1px solid #E5E7EB', borderRadius: 8, padding: '0 12px', fontSize: 15, fontFamily: 'inherit', background: '#FAFAFA', boxSizing: 'border-box' }}
-            />
-            {errors.dayStartTime && (
-              <p style={{ fontSize: 13, color: '#E7000B', marginTop: 4 }}>{errors.dayStartTime.message}</p>
-            )}
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 4, textAlign: 'right' }}>סוף יום</label>
-            <input
-              type="time"
-              {...methods.register('dayEndTime')}
-              disabled={isReadOnly}
-              style={{ width: '100%', height: 40, border: '1px solid #E5E7EB', borderRadius: 8, padding: '0 12px', fontSize: 15, fontFamily: 'inherit', background: '#FAFAFA', boxSizing: 'border-box' }}
-            />
-            {errors.dayEndTime && (
-              <p style={{ fontSize: 13, color: '#E7000B', marginTop: 4 }}>{errors.dayEndTime.message}</p>
-            )}
-          </div>
-        </div>
+        <DayTimeRangeFields
+          register={methods.register}
+          errors={errors}
+          disabled={isReadOnly}
+        />
 
         {/* Entry blocks */}
         <FormProvider {...methods}>

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleHomeRedirect } from './components/RoleHomeRedirect';
+import { AdminIndexRedirect } from './components/AdminIndexRedirect';
 import { UserRole } from './types/auth';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { LoginPage } from './pages/login/LoginPage';
@@ -11,6 +12,7 @@ import ClientsPage from './pages/admin/clients/ClientsPage';
 import UsersListPage from './pages/admin/users/UsersListPage';
 import ProjectsPage from './pages/admin/projects/ProjectsPage';
 import TasksPage from './pages/admin/tasks/TasksPage';
+import MonthClosurePage from './pages/admin/months/MonthClosurePage';
 import TaskAssignmentPage from './pages/admin/taskAssignments/TaskAssignmentPage';
 import { SelectViewPage } from './pages/select-view/SelectViewPage';
 import TimeReportPage from './pages/time-report/TimeReportPage';
@@ -42,12 +44,13 @@ const router = createBrowserRouter([
         path: '/admin',
         element: <AdminPage />,
         children: [
-          { index: true, element: <Navigate to="/admin/users" replace /> },
+          { index: true, element: <AdminIndexRedirect /> },
           { path: 'users', element: <UsersListPage /> },
           { path: 'clients', element: <ClientsPage /> },
           { path: 'projects', element: <ProjectsPage /> },
           { path: 'tasks', element: <TasksPage /> },
           { path: 'task-assignments', element: <TaskAssignmentPage /> },
+          { path: 'months', element: <MonthClosurePage /> },
         ],
       },
     ],

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   useAllClients,
@@ -7,6 +8,8 @@ import {
   useUpdateProject,
 } from '../../../services/entities.service';
 import type { ProjectWithRelations } from '../../../types/entities';
+import { useAuthStore } from '../../../store/authStore';
+import { UserRole } from '../../../types/auth';
 import Modal from '../../../components/Modal';
 import EmptyState from '../../../components/EmptyState';
 import ConfirmDialog from '../../../components/ConfirmDialog';
@@ -327,6 +330,7 @@ function ProjectRow({ project }: { project: ProjectWithRelations }) {
 }
 
 export default function ProjectsPage() {
+  const authUser = useAuthStore((s) => s.user);
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -334,6 +338,10 @@ export default function ProjectsPage() {
   const { data: projects, isLoading } = useAllProjects(selectedClientId);
 
   const filtered = projects?.filter((p) => p.name.includes(search));
+
+  if (authUser !== null && authUser.role !== UserRole.ADMIN) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div dir="rtl" className="p-6">
