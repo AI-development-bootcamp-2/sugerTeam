@@ -56,7 +56,7 @@ router.get(
 
 router.patch(
   '/tasks/:taskId',
-  requireRole(UserRole.ADMIN),
+  requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD),
   async (req: Request, res: Response, next: NextFunction) => {
     const { taskId } = req.params;
     const result = syncSchema.safeParse(req.body);
@@ -75,7 +75,7 @@ router.patch(
 
 router.delete(
   '/tasks/:taskId',
-  requireRole(UserRole.ADMIN),
+  requireRole(UserRole.ADMIN, UserRole.TEAM_LEAD),
   async (req: Request, res: Response, next: NextFunction) => {
     const { taskId } = req.params;
     try {
