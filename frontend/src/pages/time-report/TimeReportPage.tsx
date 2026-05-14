@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../services/api';
 import { useTimeEntriesData } from './hooks/useTimeEntriesData';
 import AppHeader from './components/AppHeader';
 import MonthPager from './components/MonthPager';
@@ -141,15 +142,21 @@ export default function TimeReportPage() {
 
   const selectedAbsence = absences.find((a) => a.id === editAbsenceId);
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await apiClient.post('/api/v1/auth/logout');
+    } catch {
+      // Network/server failure shouldn't trap the user — clear local state anyway
+    }
+    queryClient.clear();
     clearAuth();
-    void navigate('/login');
+    void navigate('/login', { replace: true });
   }
 
   return (
     <>
       <AppHeader
-        onLogout={handleLogout}
+        onLogout={() => { void handleLogout(); }}
         onAddDay={() => { setEditAbsenceId(null); setAbsenceDrawerOpen(true); }}
         timerState={timerState}
         onTimerClick={() => { void handleTimerClick(); }}
