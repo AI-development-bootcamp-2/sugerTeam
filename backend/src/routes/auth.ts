@@ -10,8 +10,9 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 function buildCookieOptions(remember: boolean) {
   return {
     httpOnly: true,
-    sameSite: 'strict' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // None + Secure required: frontend and backend are on different sites
+    sameSite: 'none' as const,
+    secure: true,
     // Omit maxAge when remember is false → browser-session cookie, cleared on browser close
     ...(remember ? { maxAge: THIRTY_DAYS_MS } : {}),
   };
@@ -19,8 +20,8 @@ function buildCookieOptions(remember: boolean) {
 
 const clearCookieOptions = {
   httpOnly: true,
-  sameSite: 'strict' as const,
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'none' as const,
+  secure: true,
 };
 
 const loginSchema = z.object({
