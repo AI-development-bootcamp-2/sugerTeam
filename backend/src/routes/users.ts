@@ -87,6 +87,11 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     return;
   }
 
+  if (req.user?.userId === id && result.data.role !== undefined) {
+    res.status(403).json({ error: 'אין אפשרות לשנות את התפקיד של עצמך' });
+    return;
+  }
+
   try {
     const user = await updateUser(id, result.data);
     res.status(200).json(user);
