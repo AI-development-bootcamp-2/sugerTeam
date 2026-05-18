@@ -29,7 +29,7 @@ function processQueue(token: string | null, err: unknown = null): void {
 }
 
 export const apiClient = axios.create({
-  baseURL: "https://sugerteam.onrender.com",
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
