@@ -1,5 +1,17 @@
 # Time Reporting System
 
+### [**Live Demo → suger-team.vercel.app**](https://suger-team.vercel.app)
+
+**Demo logins** — explore the app with either role:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Employee | `alice.cohen@company.com` | `QA1234!` |
+| Team Lead | `noa.bar@company.com` | `QA1234!` |
+| Admin | `admin@company.com` | `Admin1234!` |
+
+> ⚠️ **This is a shared public demo.** Do **not** enter any real or sensitive information — everything is visible to anyone, and the data may be reset or modified at any time.
+
 A full-stack time and absence reporting platform for teams. Employees log daily work hours against clients, projects, and tasks; team leads and admins manage assignments, lock months, and audit activity.
 
 Built as a TypeScript monorepo with a React + Vite frontend and a Node.js + Express + Prisma backend on PostgreSQL.
